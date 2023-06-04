@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Gráficos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/themes/classic.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/pickr.min.js"></script>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(45deg, #1de099, #1dc8cd);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: auto;
+        }
+        .container {
+            text-align: center;
+            max-width: 200%;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .graph-container {
+            margin-bottom: 20px;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 100%;
+            overflow: auto;
+            padding: 20px;
+            background: rgba(0,0,0,0.7);
+            transition: all 0.5s ease;  /* Transição suave */
+        }
+        .sidebar-hidden {
+            right: -200px;  /* Esconder a sidebar movendo-a para fora da tela */
+        }
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            margin-bottom: 20px;
+        }
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gráficos (filtrados por {{ filters_string }})</h1>
+        {% for num_var in num_vars %}
+        <h2 id="{{ num_var }}">Gráficos para variável numérica: {{ num_var }}</h2>
+        {% for key, graph in (graphs[num_var]|default({})).items() %}
+            <div class="graph-container">
+                <h3>{{ key }}</h3>
+                {{ graph.html | safe }}
+                {% for cat_level in graph.categories %}
+                    <button class="color-picker" id="color-picker-{{ num_var }}-{{ key }}-{{ cat_level }}"></button>
+                {% endfor %}
+                <button id="send-colors-{{ num_var }}-{{ key }}">Enviar cores</button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+    </div>
+    <div class="sidebar sidebar-hidden" id="sidebar">
+        <ul>
+            {% for num_var in num_vars %}
+                <li><a href="#{{ num_var }}">{{ num_var }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <script>
+        const sidebar = document.getElementById('sidebar');
+
+        // Evento de passagem do mouse
+        sidebar.addEventListener('mouseover', function() {
+            sidebar.classList.remove('sidebar-hidden');
+        });
+        sidebar.addEventListener('mouseout', function() {
+            sidebar.classList.add('sidebar-hidden');
+        });
+
+        // Evento de rolagem
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 0) {  // Se a página foi rolada para baixo
+                sidebar.classList.remove('sidebar-hidden');
+            } else {  // Se a página foi rolada de volta para o topo
+                sidebar.classList.add('sidebar-hidden');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+        console.log("Starting script...");
+
+const colorPickers = document.querySelectorAll('.color-picker');
+let colors = {};
+
+console.log(`Found ${colorPickers.length} color pickers`);
+
+colorPickers.forEach((picker) => {
+    console.log(`Processing picker with id: ${picker.id}`);
+    
+    const idComponents = picker.id.split("-");
+    const num_var = idComponents[2];
+    const key = idComponents.slice(3, -1).join("-");
+    const cat_level = idComponents[idComponents.length - 1];
+
+    if (!(num_var in colors)) {
+        colors[num_var] = {};
+    }
+    if (!(key in colors[num_var])) {
+        colors[num_var][key] = {};
+    }
+    
+    colors[num_var][key][cat_level] = "#000000";  // Initialize with a default color
+
+    const pickr = Pickr.create({
+        el: picker,
+        theme: 'classic',
+        defaultRepresentation: 'HEXA',
+        components: {
+            preview: true,
+            opacity: true,
+            hue: true,
+            interaction: {
+                input: true,
+                cancel: true,
+                clear: true,
+                save: true,
+            }
+        }
+    });
+
+    pickr.on('save', (color) => {
+        const hexColor = color.toHEXA().toString();
+        console.log(`Color chosen for picker ${picker.id}: ${hexColor}`);
+        colors[num_var][key][cat_level] = hexColor;
+        console.log(colors); // Verify if colors are being added correctly
+    });
+});
+
+
+const sendButtons = document.querySelectorAll('[id^="send-colors"]');
+console.log(`Found ${sendButtons.length} send buttons`);
+
+sendButtons.forEach((button) => {
+    button.addEventListener('click', function() {
+        console.log(`Send button clicked: ${this.id}`);
+
+        const idComponents = this.id.split("-");
+        const num_var = idComponents[2];
+        const key = idComponents.slice(3).join("-");
+        const colorPickers = document.querySelectorAll(`.color-picker[id^="color-picker"]`);
+        let colorsToSend = {};
+
+        console.log(`Found ${colorPickers.length} color pickers for ${num_var}-${key}`);
+
+        colorPickers.forEach((picker) => {
+            const pickerIdComponents = picker.id.split("-");
+            const cat_level = pickerIdComponents[pickerIdComponents.length - 1];
+            if (!(num_var in colorsToSend)) {
+                colorsToSend[num_var] = {};
+            }
+            if (!(key in colorsToSend[num_var])) {
+                colorsToSend[num_var][key] = {};
+            }
+            console.log(`Setting color for ${num_var}-${key}-${cat_level} to ${colors[num_var][key][cat_level]}`);
+            colorsToSend[num_var][key][cat_level] = colors[num_var][key][cat_level];
+        });
+
+        console.log(`Prepared colors to send: ${JSON.stringify(colorsToSend)}`);
+        console.log(`Current colors state: ${JSON.stringify(colors)}`);
+
+        fetch('/update_color', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(colorsToSend)
+        }).then((response) => {
+            console.log(`Received response from server: ${response.status}`);
+            if (response.ok) {
+                // Reload the page to reflect color changes
+                location.reload();
+            }
+        });
+    });
+});
+
+console.log("Script finished.");
+});
+
+    </script>
+</body>
+</html>

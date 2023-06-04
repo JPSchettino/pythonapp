@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste de Dados</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
+    <script lang="javascript" src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(45deg, #1de099, #1dc8cd);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: auto;
+        }
+        .container {
+            text-align: center;
+            max-width: 200%;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .results, .qq_plots, .residual_plots {
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1em;
+            margin-bottom: 20px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        table {
+            margin-left: auto;
+            margin-right: auto;
+            width: 75%; /* Ajuste para o tamanho desejado */
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 100%;
+            overflow: auto;
+            padding: 20px;
+            background: rgba(0,0,0,0.7);
+            transition: all 0.5s ease;  /* Transição suave */
+        }
+        .sidebar-hidden {
+            right: -200px;  /* Esconder a sidebar movendo-a para fora da tela */
+        }
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            margin-bottom: 20px;
+        }
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+    </style>
+</head> 
+<body>
+    <div class="container">
+        <h1>Teste de Médias(filtrados por {{ filters_string }})</h1>
+        
+        <h2>Resultados de Normalidade</h2>
+        <table id="table1" class="results">
+            <button onclick="copyTableToClipboard('table1')">Copiar Tabela</button>
+            <button onclick="exportTableToExcel('table1')">Exportar Tabela (Excel)</button>
+            {{ results_normality_html | safe }}
+        </table>
+        
+        <h2>Resultados de Testes</h2>
+        <table id="table2" class="results">
+            <button onclick="copyTableToClipboard('table2')">Copiar Tabela</button>
+            <button onclick="exportTableToExcel('table2')">Exportar Tabela (Excel)</button>
+            {{ results_tests_html | safe }}
+        </table>
+
+        <h2>Resultados Descritivos</h2>
+        <table id="table3" class="results">
+            <button onclick="copyTableToClipboard('table3')">Copiar Tabela</button>
+            <button onclick="exportTableToExcel('table3')">Exportar Tabela (Excel)</button>
+            {{ results_descriptive_html | safe }}
+        </table>
+
+        <div id="qq_plots" class="qq_plots">
+            <h2>Gráficos Q-Q(filtrados por {{ filters_string }})</h2>
+            {% for plot_encoded in qqplots_encoded %}
+                <img src="data:image/png;base64,{{ plot_encoded }}" alt="Gráfico Q-Q">
+            {% endfor %}
+        </div>
+        
+        <div id = "residual_plots" class="residual_plots">
+            <h2>Gráficos de Resíduos Qui-Quadrados Padronizados(filtrados por {{ filters_string }})</h2>
+            {% for plot_encoded in residualplots_encoded %}
+                <img src="data:image/png;base64,{{ plot_encoded }}" alt="Gráfico de Resíduos Qui-Quadrados Padronizados">
+            {% endfor %}
+        </div>
+    </div>
+    <div class="sidebar sidebar-hidden" id="sidebar">
+        <ul>
+                <li><a href="#table1">Resultados de Normalidade</a></li>
+                <li><a href="#table2">Resultados de Testes</a></li>
+                <li><a href="#table3">Resultados Descritivos</a></li>
+                <li><a href="#qq_plots">qq_plots</a></li>
+                <li><a href="#residual_plots">residual_plots</a></li>
+       </ul>
+    </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
+    <script>
+        const sidebar = document.getElementById('sidebar');
+
+        // Evento de passagem do mouse
+        sidebar.addEventListener('mouseover', function() {
+            sidebar.classList.remove('sidebar-hidden');
+        });
+        sidebar.addEventListener('mouseout', function() {
+            sidebar.classList.add('sidebar-hidden');
+        });
+
+        // Evento de rolagem
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 0) {  // Se a página foi rolada para baixo
+                sidebar.classList.remove('sidebar-hidden');
+            } else {  // Se a página foi rolada de volta para o topo
+                sidebar.classList.add('sidebar-hidden');
+            }
+        });
+
+        $(document).ready(function() {
+            $('.results').DataTable();
+        });
+
+        async function copyTableToClipboard(tableID) {
+            var tableText = '';
+            var rows = document.querySelectorAll('#' + tableID + ' tr');
+
+            for (var i = 0; i < rows.length; i++) {
+                var rowText = '';
+                var cols = rows[i].querySelectorAll('td, th');
+
+                for (var j = 0; j < cols.length; j++) 
+                    rowText += cols[j].innerText + '\t';
+                
+                tableText += rowText.trim() + '\n'; 
+            }
+
+            try {
+                await navigator.clipboard.writeText(tableText.trim());
+                console.log('Table copied to clipboard');
+            } catch (err) {
+                console.error('Failed to copy table: ', err);
+            }
+        }
+
+        function exportTableToExcel(tableId) {
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.table_to_sheet(document.querySelector('#' + tableId));
+    XLSX.utils.book_append_sheet(wb, ws, "Resumo");
+    XLSX.writeFile(wb, tableId + ".xlsx");
+}
+
+    </script>
+</body>
+</html>
+
