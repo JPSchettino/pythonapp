@@ -6,6 +6,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/themes/classic.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/pickr.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js"></script>
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
@@ -61,149 +63,303 @@
 <body>
     <div class="container">
         <h1>Gráficos (filtrados por {{ filters_string }})</h1>
-        {% for num_var in num_vars %}
-        <h2 id="{{ num_var }}">Gráficos para variável numérica: {{ num_var }}</h2>
-        {% for key, graph in (graphs[num_var]|default({})).items() %}
-            <div class="graph-container">
-                <h3>{{ key }}</h3>
-                {{ graph.html | safe }}
-                {% for cat_level in graph.categories %}
-                    <button class="color-picker" id="color-picker-{{ num_var }}-{{ key }}-{{ cat_level }}"></button>
-                {% endfor %}
-                <button id="send-colors-{{ num_var }}-{{ key }}">Enviar cores</button>
-            </div>
-        {% endfor %}
-    {% endfor %}
-    </div>
-    <div class="sidebar sidebar-hidden" id="sidebar">
-        <ul>
-            {% for num_var in num_vars %}
-                <li><a href="#{{ num_var }}">{{ num_var }}</a></li>
-            {% endfor %}
-        </ul>
-    </div>
 
+        <!-- Adicionando seleção dropdown e gráfico de boxplot -->
+        <div class="graph-container">
+            <h2>Boxplot para variável numérica:</h2>
+            <select id="numVarSelect"></select>
+            <select id="catSelect"></select>
+            <button id="saveButton">Salvar como PNG</button>
+            <div id="boxplot"></div>
+            <div id="colorPickerContainer"></div>
+            <button id="updateChartButton">Atualizar gráfico</button>
+            
+        </div>
+
+        <!-- O resto do seu HTML ... -->
+    </div>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
-        const sidebar = document.getElementById('sidebar');
+ window.addEventListener('load', function() {
+ console.log("boxplot.js carregado");
 
-        // Evento de passagem do mouse
-        sidebar.addEventListener('mouseover', function() {
-            sidebar.classList.remove('sidebar-hidden');
-        });
-        sidebar.addEventListener('mouseout', function() {
-            sidebar.classList.add('sidebar-hidden');
-        });
+ function createBoxplot(data, colorScheme) {
+    d3.select('#boxplot').selectAll("svg").remove();
 
-        // Evento de rolagem
-        window.addEventListener('scroll', function() {
-            if (window.scrollY > 0) {  // Se a página foi rolada para baixo
-                sidebar.classList.remove('sidebar-hidden');
-            } else {  // Se a página foi rolada de volta para o topo
-                sidebar.classList.add('sidebar-hidden');
-            }
-        });
+    var margin = {top: 50, right: 50, bottom: 50, left: 50},
+        width = 800 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
 
-        document.addEventListener('DOMContentLoaded', function() {
-        console.log("Starting script...");
+    var x = d3.scaleBand()
+        .rangeRound([0, width])
+        .padding(0.1)
+        .domain(data.map(function(d) { return d.level; }));
 
-const colorPickers = document.querySelectorAll('.color-picker');
-let colors = {};
+    var y = d3.scaleLinear()
+        .range([height, 0])
+        .domain([0, d3.max(data, function(d) { return d.values.max; })]);
 
-console.log(`Found ${colorPickers.length} color pickers`);
+    var svg = d3.select("#boxplot").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .style("background-color", "white");
 
-colorPickers.forEach((picker) => {
-    console.log(`Processing picker with id: ${picker.id}`);
-    
-    const idComponents = picker.id.split("-");
-    const num_var = idComponents[2];
-    const key = idComponents.slice(3, -1).join("-");
-    const cat_level = idComponents[idComponents.length - 1];
-
-    if (!(num_var in colors)) {
-        colors[num_var] = {};
-    }
-    if (!(key in colors[num_var])) {
-        colors[num_var][key] = {};
+    // Adicionar linhas de grade
+    function make_x_gridlines() {   
+        return d3.axisBottom(x).ticks(5)
     }
     
-    colors[num_var][key][cat_level] = "#000000";  // Initialize with a default color
+    function make_y_gridlines() {   
+        return d3.axisLeft(y).ticks(5)
+    }
 
-    const pickr = Pickr.create({
-        el: picker,
-        theme: 'classic',
-        defaultRepresentation: 'HEXA',
-        components: {
-            preview: true,
-            opacity: true,
-            hue: true,
-            interaction: {
-                input: true,
-                cancel: true,
-                clear: true,
-                save: true,
+    svg.append("g")
+        .attr("class", "grid")
+        .attr("transform", "translate(0," + height + ")")
+        .call(make_x_gridlines()
+            .tickSize(-height)
+            .tickFormat("")
+        )
+
+    svg.append("g")			
+        .attr("class", "grid")
+        .call(make_y_gridlines()
+            .tickSize(-width)
+            .tickFormat("")
+        )
+  
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
+
+    svg.append("g")
+        .call(d3.axisLeft(y));
+
+    var boxWidth = 50;
+
+    // Animação para tornar o gráfico mais impressionante
+    var rect = svg.selectAll(".box")
+    .data(data)
+    .enter().append("rect")
+    .attr("x", function(d) { return x(d.level); })
+    .attr("y", height)
+    .attr("height", 0)
+    .attr("width", boxWidth)
+    .attr("fill", function(d, i) { return colorScheme[i]; })
+    .attr("stroke", "black");
+
+    rect.transition()
+    .duration(800)
+    .attr("y", function(d) { return y(d.values.q3); })
+    .attr("height", function(d) { return y(d.values.q1) - y(d.values.q3); })
+    .delay(function(d,i){return(i*100)})
+    // draw line for min
+    svg.selectAll(".lineMin")
+        .data(data)
+        .enter().append("line")
+        .attr("x1", function(d) { return x(d.level) + boxWidth/2; })
+        .attr("y1", function(d) { return y(d.values.min); })
+        .attr("x2", function(d) { return x(d.level) + boxWidth/2; })
+        .attr("y2", function(d) { return y(d.values.q1); })
+        .attr("stroke", "black");
+
+    // draw line for max
+    svg.selectAll(".lineMax")
+        .data(data)
+        .enter().append("line")
+        .attr("x1", function(d) { return x(d.level) + boxWidth/2; })
+        .attr("y1", function(d) { return y(d.values.q3); })
+        .attr("x2", function(d) { return x(d.level) + boxWidth/2; })
+        .attr("y2", function(d) { return y(d.values.max); })
+        .attr("stroke", "black");
+
+    // draw line for median (median = q2 in this case)
+    svg.selectAll(".lineMedian")
+        .data(data)
+        .enter().append("line")
+        .attr("x1", function(d) { return x(d.level); })
+        .attr("y1", function(d) { return y(d.values.q2); })
+        .attr("x2", function(d) { return x(d.level) + boxWidth; })
+        .attr("y2", function(d) { return y(d.values.q2); })
+        .attr("stroke", "black");
+
+    // Adicione títulos aos eixos
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x", 0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Value");  // Substitua "Value" pelo título apropriado para o eixo Y
+
+    svg.append("text")
+        .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top) + ")")
+        .style("text-anchor", "middle")
+        .text("Level");  // Substitua "Level" pelo título apropriado para o eixo X
+}
+
+// Função para preparar os dados
+function prepareData(data, varNumerica, categoria) {
+    // Acesse os dados corretos com base na varNumerica e na categoria.
+    var dataForVar = data[varNumerica][`boxplot_${categoria}`];
+    return dataForVar;
+}
+
+// Função para gerar dados do boxplot
+function generateBoxplotData(preparedData, varNumerica, categoria) {
+    console.log("iniciando generateBoxplotData")
+    var boxplotData = [];
+    console.log(preparedData)
+
+    for (var subcategoria in preparedData['min']) {
+        boxplotData.push({
+            level: subcategoria,
+            values: {
+                min: preparedData['min'][subcategoria],
+                q1: preparedData['25%'][subcategoria],
+                q2: preparedData['50%'][subcategoria],
+                q3: preparedData['75%'][subcategoria],
+                max: preparedData['max'][subcategoria],
+                outlier: [] // You might need to adjust this based on your data
             }
-        }
-    });
-
-    pickr.on('save', (color) => {
-        const hexColor = color.toHEXA().toString();
-        console.log(`Color chosen for picker ${picker.id}: ${hexColor}`);
-        colors[num_var][key][cat_level] = hexColor;
-        console.log(colors); // Verify if colors are being added correctly
-    });
-});
-
-
-const sendButtons = document.querySelectorAll('[id^="send-colors"]');
-console.log(`Found ${sendButtons.length} send buttons`);
-
-sendButtons.forEach((button) => {
-    button.addEventListener('click', function() {
-        console.log(`Send button clicked: ${this.id}`);
-
-        const idComponents = this.id.split("-");
-        const num_var = idComponents[2];
-        const key = idComponents.slice(3).join("-");
-        const colorPickers = document.querySelectorAll(`.color-picker[id^="color-picker"]`);
-        let colorsToSend = {};
-
-        console.log(`Found ${colorPickers.length} color pickers for ${num_var}-${key}`);
-
-        colorPickers.forEach((picker) => {
-            const pickerIdComponents = picker.id.split("-");
-            const cat_level = pickerIdComponents[pickerIdComponents.length - 1];
-            if (!(num_var in colorsToSend)) {
-                colorsToSend[num_var] = {};
-            }
-            if (!(key in colorsToSend[num_var])) {
-                colorsToSend[num_var][key] = {};
-            }
-            console.log(`Setting color for ${num_var}-${key}-${cat_level} to ${colors[num_var][key][cat_level]}`);
-            colorsToSend[num_var][key][cat_level] = colors[num_var][key][cat_level];
         });
+    }
 
-        console.log(`Prepared colors to send: ${JSON.stringify(colorsToSend)}`);
-        console.log(`Current colors state: ${JSON.stringify(colors)}`);
+    return boxplotData;
+}
 
-        fetch('/update_color', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(colorsToSend)
-        }).then((response) => {
-            console.log(`Received response from server: ${response.status}`);
-            if (response.ok) {
-                // Reload the page to reflect color changes
-                location.reload();
-            }
-        });
+// Função auxiliar para obter a lista de variáveis numéricas
+function getNumericVariables(data) {
+    return Object.keys(data);
+}
+
+// Função auxiliar para obter a lista de variáveis categóricas
+function getCategoricalVariables(data) {
+    // Aqui assumimos que as categorias são as mesmas em todos os dados numéricos
+    // Então, apenas pegamos as chaves do primeiro conjunto de dados numéricos
+    var firstNumericData = data[Object.keys(data)[0]];
+    var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
+    return categories;
+}
+
+d3.json('/visualizacao').then(function(data) {
+    console.log(data);
+    console.log(Object.keys(data));
+
+    // Preenchendo a seleção dropdown com as variáveis numéricas
+    var dropdown = d3.select('#numVarSelect');
+    dropdown.selectAll('option')
+        .data(getNumericVariables(data))
+        .enter()
+        .append('option')
+        .attr('value', function(d) { return d; })
+        .text(function(d) { return d; });
+
+    // Preenchendo a seleção dropdown com as categorias
+    var catDropdown = d3.select('#catSelect');
+    catDropdown.selectAll('option')
+        .data(getCategoricalVariables(data)) // Use a função auxiliar para obter as variáveis categóricas.
+        .enter()
+        .append('option')
+        .attr('value', function(d) { return d; })
+        .text(function(d) { return d; });
+
+    // Criando o boxplot para a chave selecionada
+    function updateBoxplot() {
+        d3.select('#boxplot').selectAll("svg").remove();
+
+        var varNumerica = dropdown.property('value');
+        var categoria = catDropdown.property('value');
+
+        var preparedData = prepareData(data, varNumerica, categoria);
+        console.log(preparedData)
+        console.log("foi?")
+        var boxplotData = generateBoxplotData(preparedData, varNumerica, categoria);
+        updateData(boxplotData);
+        console.log("foi?")
+        console.log(boxplotData.data)
+        console.log(boxplotData)
+        createBoxplot(boxplotData);
+    }
+
+    dropdown.on('change', updateBoxplot);
+    catDropdown.on('change', updateBoxplot);
+
+        // Gerando o boxplot inicial
+        updateBoxplot();
+    }).catch(function(error){
+        console.log(error);
     });
-});
 
-console.log("Script finished.");
-});
 
-    </script>
+function updateData(newData) {
+  data = newData;
+
+  // Limpa os seletores de cores existentes
+  document.getElementById('colorPickerContainer').innerHTML = '';
+
+  // Cria um novo seletor de cores para cada 'level' nos novos dados
+  data.forEach(function(d, i) {
+    var colorPickerDiv = document.createElement('div');
+
+    var label = document.createElement('label');
+    label.setAttribute('for', 'colorPicker_' + i);
+    label.innerText = d.level;
+    colorPickerDiv.appendChild(label);
+
+    var colorPicker = document.createElement('input');
+    colorPicker.setAttribute('type', 'color');
+    colorPicker.setAttribute('id', 'colorPicker_' + i);
+    colorPicker.setAttribute('value', '#000000');
+    colorPickerDiv.appendChild(colorPicker);
+
+    document.getElementById('colorPickerContainer').appendChild(colorPickerDiv);
+  });
+
+
+
+}
+document.getElementById('updateChartButton').addEventListener('click', function() {
+  // Coleta as cores selecionadas
+  var colorScheme = data.map(function(d, i) {
+    return document.getElementById('colorPicker_' + i).value;
+  });
+
+  // Atualiza o gráfico com as cores selecionadas
+  console.log("oioi")
+  console.log(colorScheme)
+  createBoxplot(data, colorScheme);
+});
+});
+document.getElementById("saveButton").addEventListener("click", function(){
+    var svgElement = document.querySelector('svg');
+    var svgString = new XMLSerializer().serializeToString(svgElement);
+
+    var canvas = document.createElement("canvas");
+    // Define o tamanho do canvas para o mesmo tamanho do SVG
+    canvas.width = svgElement.clientWidth;
+    canvas.height = svgElement.clientHeight;
+
+    var ctx = canvas.getContext("2d");
+    var DOMURL = self.URL || self.webkitURL || self;
+    var img = new Image();
+    var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+    var url = DOMURL.createObjectURL(svg);
+    
+    img.onload = function() {
+        ctx.drawImage(img, 0, 0);
+        var png = canvas.toDataURL("image/png");
+        DOMURL.revokeObjectURL(png);
+
+        // Usando FileSaver para salvar a imagem
+        saveAs(png, 'boxplot.png');
+    };
+    
+    img.src = url;
+});
+</script>
+    
 </body>
 </html>

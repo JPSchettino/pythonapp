@@ -218,6 +218,44 @@ def update_color():
 
     return jsonify(success=True)
 
+@app.route('/visualizacao', methods=['GET', 'POST'])
+def visualizacao():
+    if 'dataframe' not in session:
+        return redirect(url_for('central'))
+    
+    dataframe = pd.read_json(session['filtered_dataframe'])
+    cat_vars = session.get('cat_vars', [])
+    num_vars = session.get('num_vars', [])
+    cat_levels = {}
+    
+    for num_var in num_vars:
+        for cat_var in cat_vars:
+            cat_levels[cat_var] = dataframe[cat_var].unique().tolist()
+
+    graphs = {}
+
+    for num_var in num_vars:
+        graphs[num_var] = {}
+        for cat_var in cat_vars:
+            graph_data = dataframe.groupby(cat_var)[num_var].describe()
+            graphs[num_var][f"barplot_{cat_var}"] = graph_data.to_dict()
+            graphs[num_var][f"boxplot_{cat_var}"] = graph_data.to_dict()
+
+        graph_data = dataframe[num_var].value_counts(normalize=True)
+        graphs[num_var][f"histogram"] = graph_data.to_dict()
+
+    filters = session.get('filters', {})
+    filter_strings = []
+    for key, value in filters.items():
+        filter_value = ', '.join(value['values'])
+        filter_strings.append(f'{key}: {filter_value}')
+    filters_string = ', '.join(filter_strings)
+
+    session['graphs'] = graphs
+    print(graphs)
+    data = jsonify(graphs)
+    return data
+
 @app.route('/grafico', methods=['GET', 'POST'])
 def grafico():
     if 'dataframe' not in session:
@@ -226,97 +264,34 @@ def grafico():
     dataframe = pd.read_json(session['filtered_dataframe'])
     cat_vars = session.get('cat_vars', [])
     num_vars = session.get('num_vars', [])
-    cat_levels={}
-        # Verifica se os gráficos já foram criados
-    if 'graphs' in session and len(session['graphs']) != 0 and session.get('color_updated', False):
+    cat_levels = {}
+    
+    for num_var in num_vars:
+        for cat_var in cat_vars:
+            cat_levels[cat_var] = dataframe[cat_var].unique().tolist()
 
+    graphs = {}
 
-        for num_var in num_vars:
-            for cat_var in cat_vars:
-                cat_levels[cat_var] = dataframe[cat_var].unique().tolist()
-                
+    for num_var in num_vars:
+        graphs[num_var] = {}
+        for cat_var in cat_vars:
+            graph_data = dataframe.groupby(cat_var)[num_var].describe()
+            graphs[num_var][f"barplot_{cat_var}"] = graph_data.to_dict()
+            graphs[num_var][f"boxplot_{cat_var}"] = graph_data.to_dict()
 
-        graphs = session['graphs']
-        print("ooooooooooooooooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
-        #print(graphs)
-        filters = session.get('filters', {}) # Obtenha os filtros da sessão
-        filter_strings = []
-        for key, value in filters.items():
-            filter_value = ', '.join(value['values'])
-            filter_strings.append(f'{key}: {filter_value}')
-        filters_string = ', '.join(filter_strings)
-        session['color_updated'] = False
+        graph_data = dataframe[num_var].value_counts(normalize=True)
+        graphs[num_var][f"histogram"] = graph_data.to_dict()
 
-    else:
-        graphs = {}
+    filters = session.get('filters', {})
+    filter_strings = []
+    for key, value in filters.items():
+        filter_value = ', '.join(value['values'])
+        filter_strings.append(f'{key}: {filter_value}')
+    filters_string = ', '.join(filter_strings)
 
-        for num_var in num_vars:
-            graphs[num_var] = {}
-            # Create a barplot for each numerical variable
-            for cat_var in cat_vars:
-                bar_fig = px.bar(dataframe, x=cat_var, y=num_var)
-                bar_fig.update_layout(
-                    title=f"Gráfico de barras para {cat_var} e {num_var}",
-                    xaxis_title=cat_var,
-                    yaxis_title=num_var,
-                    height=600,  # Adjust the size of the graph
-                    width=900
-                )
-                graphs[f"barplot_{num_var}_{cat_var}"] = bar_fig.to_html(full_html=False)
-                graphs[num_var][f"barplot_{cat_var}"] = {
-                            'html': bar_fig.to_html(full_html=False),
-                            'categories': dataframe[cat_var].unique().tolist(),
-                        }
-
-            # Create a boxplot for each numerical variable
-            for cat_var in cat_vars:
-                cat_levels[cat_var] = dataframe[cat_var].unique().tolist()
-                box_fig = px.box(dataframe, x=cat_var, y=num_var)
-                box_fig.update_layout(
-                    title=f"Boxplots para a variável numérica {num_var}",
-                    xaxis_title=cat_var,
-                    yaxis_title=num_var,
-                    height=600,  # Adjust the size of the graph
-                    width=900
-                )
-                graphs[f"boxplot_{num_var}_{cat_var}"] = box_fig.to_html(full_html=False)
-                graphs[num_var][f"boxplot_{cat_var}"] = {
-                                        'html': box_fig.to_html(full_html=False),
-                                        'categories': dataframe[cat_var].unique().tolist(),
-                                    }
-                                        
-            # Create a frequency histogram for each numerical variable
-            hist_fig = px.histogram(dataframe, x=cat_vars, nbins=20, histnorm='probability density')
-            hist_fig.update_traces(hovertemplate='Frequência: %{y:.2%}')  # Show percentages on hover
-            hist_fig.update_layout(
-                title=f"Histogramas de frequência para a variável numérica {num_var}",
-                xaxis_title='Categorias',
-                yaxis_title='Frequência',
-                height=600,  # Adjust the size of the graph
-                width=900
-            )
-            graphs[f"histogram_{num_var}"] = hist_fig.to_html(full_html=False)
-            graphs[num_var][f"histogram"] =  {
-                            'html': hist_fig.to_html(full_html=False),
-                            'categories': dataframe[cat_var].unique().tolist(),
-                        }
-
-
-
-
-        filters = session.get('filters', {}) # Obtenha os filtros da sessão
-        filter_strings = []
-        for key, value in filters.items():
-            filter_value = ', '.join(value['values'])
-            filter_strings.append(f'{key}: {filter_value}')
-        filters_string = ', '.join(filter_strings)
-        session['graphs'] = graphs
-
-        
-
-    return render_template('grafico.html', graphs=graphs, num_vars=num_vars, filters_string=filters_string,cat_vars=cat_vars, cat_levels=cat_levels)
-
-
+    session['graphs'] = graphs
+    print(graphs)
+    return render_template('grafico.html', num_vars=num_vars, filters_string=filters_string, cat_vars=cat_vars, cat_levels=cat_levels,graphs=graphs)  # Substitua 'seu_arquivo.html' pelo nome do seu arquivo HTML
 
 
 @app.route('/teste', methods=['GET', 'POST'])
