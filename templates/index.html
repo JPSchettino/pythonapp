@@ -253,9 +253,29 @@ function applyFilter() {
         placeholder: "Selecione as variáveis",
         allowClear: true
     });
-    $('#CATAVar1').select2({
-        placeholder: "Selecione as variáveis",
-        allowClear: true
+        $("#CATAVar1").off('change').on('change', function() {
+        // Obtém todas as opções no select
+        let options = $(this).find('option');
+
+        // Descobre os índices das opções selecionadas
+        let selectedIndices = $(this).find('option:selected').toArray().map(function(option) {
+            return options.index(option);
+        });
+
+        // Se menos de 2 opções estiverem selecionadas, não faz nada
+        if (selectedIndices.length < 2) return;
+
+        // Descobre as opções mínima e máxima selecionadas
+        let minSelectedIndex = Math.min(...selectedIndices);
+        let maxSelectedIndex = Math.max(...selectedIndices);
+
+        // Seleciona todas as opções entre minSelectedIndex e maxSelectedIndex
+        for (let i = minSelectedIndex; i <= maxSelectedIndex; i++) {
+            options.eq(i).prop('selected', true);
+        }
+
+        // Atualiza o seletor para refletir as mudanças
+        $(this).trigger('change.select2');
     });
 
     var isMouseInFormContainer = false;
@@ -279,6 +299,15 @@ $('body').mousemove(function(e) {
 });
 
     });
+    $("#clearFiltersButton").click(function () {
+    // Limpa as opções de filtro selecionadas
+    $("#filterVar1, #filterVar2, #filterVar3").val('').trigger('change');
+    
+    // Limpa o conteúdo das divisões de filtro
+    $("#filterVar1Filter, #filterVar2Filter, #filterVar3Filter").empty();
+    
+    console.log("Filtros limpos!");
+});
 </script>
 </head>
 <body>
@@ -307,6 +336,7 @@ $('body').mousemove(function(e) {
                 <div id="filterVar3Filter"></div>
             </div>
             <button type="button" class="btn btn-primary mb-3" id="filterButton">Filtrar</button>
+            <button type="button" class="btn btn-secondary mb-3" id="clearFiltersButton">Limpar Filtros</button>
             <!-- Filter options end -->
             <div class="mb-3">
                 <label for="catVar1" class="form-label">Variável categórica 1:</label>

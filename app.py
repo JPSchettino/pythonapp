@@ -157,7 +157,7 @@ def resumo():
 
     summary = dataframe.describe(include='all')
     summary.fillna('-', inplace=True)
-    summary.rename(index={'count': 'contagem', 'mean': 'média', 'std': 'desvio padrão', 'min': 'mínimo', '25%': '1º quartil', '50%': 'mediana', '75%': '3º quartil', 'max': 'máximo'}, inplace=True)  # Traduz os nomes das métricas para o português
+    summary.rename(index={'count': 'contagem', 'mean': 'média', 'std': 'desvio padrão', 'min': 'mínimo', '25%': '1º quartil', '50%': 'mediana', '75%': '3º quartil', 'max': 'máximo', 'unique': 'Níveis distintos'}, inplace=True)  # Traduz os nomes das métricas para o português
     summary_html = summary.to_html()
 
     return render_template('resumo.html', summary_html=summary_html, filters_string=filters_string)
@@ -322,7 +322,7 @@ def teste():
                 # Descriptive statistics
                 mean = np.mean(group)
                 std = np.std(group)
-                results_descriptive.append({'Variable': f'{cat_var} = {groups.keys()[i]}', 'Mean': mean, 'Std Dev': std})
+                results_descriptive.append({'Variable': f'{cat_var} = {groups.keys()[i]} - {num_var}', 'Mean': mean, 'Std Dev': std})
 
                 # Se a distribuição for normal, aplicar um teste paramétrico (ex: T-test)
                 if p > 0.05:
@@ -370,6 +370,7 @@ def teste():
     results_tests_df.rename(columns={'Variable': 'Variável', 'Test': 'Teste', 'Statistic': 'Estatística do teste', 'p-value': 'p-valor','Mean Difference':'Diferença entre as médias'}, inplace=True)  # Traduz os nomes das métricas para o português
     results_descriptive_df.rename(columns={'Variable': 'Variável', 'Mean': 'Média', 'Std Dev': 'Desvio padrão'}, inplace=True)  # Traduz os nomes das métricas para o português
     
+    significant_vars = set(results_tests_df[results_tests_df['p-valor'] < 0.05]['Variável'].str.split(' vs ').str[0].str.split(' - ').str[0])
     
     results_normality_html = results_normality_df.to_html(index=False).replace("<table", "<table class='results'").replace("<thead>", "<thead class='thead-dark'>")
     results_tests_html = results_tests_df.to_html(index=False).replace("<table", "<table class='results'").replace("<thead>", "<thead class='thead-dark'>")
@@ -382,6 +383,24 @@ def teste():
         for row in table.find_all('tr'):
             cells = row.find_all('td')
             if cells:
+                p_value = float(cells[-1].text)
+                if p_value < 0.05:
+                    span = soup.new_tag('span', style="color: red")
+                    span.string = cells[-1].text
+                    cells[-1].string.replace_with(span)
+        return str(soup)
+    
+    def highlight_p_values1(html, significant_vars):
+        soup = BeautifulSoup(html, "html.parser")
+        table = soup.find('table')
+        for row in table.find_all('tr'):
+            cells = row.find_all('td')
+            if cells:
+                variable = cells[0].text.split(' - ')[0]  # Extrai o nome da variável
+                if variable in significant_vars:
+                    span = soup.new_tag('span', style="color: blue")  # Aqui escolhi a cor azul, mas você pode alterar conforme preferir
+                    span.string = cells[0].text
+                    cells[0].string.replace_with(span)
                 p_value = float(cells[-1].text)
                 if p_value < 0.05:
                     span = soup.new_tag('span', style="color: red")
@@ -407,6 +426,7 @@ def teste():
 
     results_normality_html = highlight_p_values(results_normality_html)
     results_tests_html = highlight_p_values2(results_tests_html)
+    results_descriptive_html = highlight_p_values1(results_descriptive_html, significant_vars)
 
 
 
