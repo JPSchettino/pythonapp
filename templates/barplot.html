@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Gráficos</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/themes/classic.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/pickr.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js"></script>
     <style>
         body {
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'Sora', Light;
             margin: 0;
             padding: 0;
-            background: linear-gradient(45deg, #1de099, #1dc8cd);
+            background: linear-gradient(45deg, #19B1A1, #307FE2);
             color: white;
             display: flex;
             flex-direction: column;
@@ -71,7 +71,7 @@
         }
 
         select:focus {
-            box-shadow: 0px 2px 6px 1px #1de099;
+            box-shadow: 0px 2px 6px 1px #19B1A1;
             outline: none;
         }
 
@@ -80,14 +80,14 @@
             border: none;
             border-radius: 5px;
             color: white;
-            background-color: #1de099;
+            background-color: #19B1A1;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
         button:hover {
-            background-color: #1dc8cd;
+            background-color: #307FE2;
         }
 
         button:active {
@@ -102,11 +102,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>Gráficos (filtrados por {{ filters_string }})</h1>
+        <h1>Gráficos de barra (filtrados por {{ filters_string }})</h1>
 
         <!-- Adicionando seleção dropdown e gráfico de boxplot -->
         <div class="graph-container">
-            <h2>Boxplot para variável numérica:</h2>
+            <h2>Gráficos de barra:</h2>
             <select id="numVarSelect"></select>
             <select id="catSelect"></select>
             <button id="saveButton">Salvar como PNG</button>

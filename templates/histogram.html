@@ -102,15 +102,15 @@
 </head>
 <body>
     <div class="container">
-        <h1>Boxplots (filtrados por {{ filters_string }})</h1>
+        <h1>Gráficos (filtrados por {{ filters_string }})</h1>
 
         <!-- Adicionando seleção dropdown e gráfico de boxplot -->
         <div class="graph-container">
-            <h2>Boxplots:</h2>
+            <h2>histogramas:</h2>
             <select id="numVarSelect"></select>
             <select id="catSelect"></select>
             <button id="saveButton">Salvar como PNG</button>
-            <div id="boxplot"></div>
+            <div id="histogram"></div>
             <div id="colorPickerContainer"></div>
             <button id="updateChartButton">Atualizar gráfico</button>
             
@@ -123,12 +123,14 @@
  window.addEventListener('load', function() {
  console.log("boxplot.js carregado");
 
- function createBoxplot(data, colorScheme) {
-    d3.select('#boxplot').selectAll("svg").remove();
+ function createhistogram(data, colorScheme) {
+    d3.select('#histogram').selectAll("svg").remove();
 
     var margin = {top: 50, right: 50, bottom: 50, left: 50},
         width = 800 - margin.left - margin.right,
         height = 400 - margin.top - margin.bottom;
+    
+    var total = d3.sum(data, function(d) { return d.values.count; });
 
     var x = d3.scaleBand()
         .rangeRound([0, width])
@@ -137,137 +139,84 @@
 
     var y = d3.scaleLinear()
         .range([height, 0])
-        .domain([0, d3.max(data, function(d) { return d.values.max; })]);
+        .domain([0, 1]);
 
-    var svg = d3.select("#boxplot").append("svg")
+    var svg = d3.select("#histogram").append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
         .style("background-color", "white");
 
-    // Adicionar linhas de grade
-    function make_x_gridlines() {   
-        return d3.axisBottom(x).ticks(5)
-    }
-    
-    function make_y_gridlines() {   
-        return d3.axisLeft(y).ticks(5)
-    }
+    // The rest of your code is unchanged until the y axis call
 
     svg.append("g")
-        .attr("class", "grid")
-        .attr("transform", "translate(0," + height + ")")
-        .call(make_x_gridlines()
-            .tickSize(-height)
-            .tickFormat("")
-        )
-
-    svg.append("g")			
-        .attr("class", "grid")
-        .call(make_y_gridlines()
-            .tickSize(-width)
-            .tickFormat("")
-        )
-  
-    svg.append("g")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x));
-
-    svg.append("g")
-        .call(d3.axisLeft(y));
+        .call(d3.axisLeft(y).tickFormat(d3.format(".0%")));
 
     var boxWidth = 50;
 
-    // Animação para tornar o gráfico mais impressionante
-    var rect = svg.selectAll(".box")
-    .data(data)
-    .enter().append("rect")
-    .attr("x", function(d) { return x(d.level); })
-    .attr("y", height)
-    .attr("height", 0)
-    .attr("width", boxWidth)
-    .attr("fill", function(d, i) { return colorScheme[i]; })
-    .attr("stroke", "black");
+    var rect = svg.selectAll(".histogram")
+        .data(data)
+        .enter().append("rect")
+        .attr("x", function(d) { return x(d.level); })
+        .attr("y", function(d) { return y(d.values.count / total); })
+        .attr("height", function(d) { return height - y(d.values.count / total); })
+        .attr("width", x.bandwidth())
+        .attr("fill", function(d, i) { return colorScheme[i]; })
+        .attr("stroke", "black");
 
     rect.transition()
-    .duration(800)
-    .attr("y", function(d) { return y(d.values.q3); })
-    .attr("height", function(d) { return y(d.values.q1) - y(d.values.q3); })
-    .delay(function(d,i){return(i*100)})
-    // draw line for min
-    svg.selectAll(".lineMin")
-        .data(data)
-        .enter().append("line")
-        .attr("x1", function(d) { return x(d.level) + boxWidth/2; })
-        .attr("y1", function(d) { return y(d.values.min); })
-        .attr("x2", function(d) { return x(d.level) + boxWidth/2; })
-        .attr("y2", function(d) { return y(d.values.q1); })
-        .attr("stroke", "black");
+        .duration(800)
+        .attr("y", function(d) { return y(d.values.count / total); })
+        .attr("height", function(d) { return height - y(d.values.count / total); })
+        .delay(function(d,i){return(i*100)})
 
-    // draw line for max
-    svg.selectAll(".lineMax")
-        .data(data)
-        .enter().append("line")
-        .attr("x1", function(d) { return x(d.level) + boxWidth/2; })
-        .attr("y1", function(d) { return y(d.values.q3); })
-        .attr("x2", function(d) { return x(d.level) + boxWidth/2; })
-        .attr("y2", function(d) { return y(d.values.max); })
-        .attr("stroke", "black");
-
-    // draw line for median (median = q2 in this case)
-    svg.selectAll(".lineMedian")
-        .data(data)
-        .enter().append("line")
-        .attr("x1", function(d) { return x(d.level); })
-        .attr("y1", function(d) { return y(d.values.q2); })
-        .attr("x2", function(d) { return x(d.level) + boxWidth; })
-        .attr("y2", function(d) { return y(d.values.q2); })
-        .attr("stroke", "black");
-
-    // Adicione títulos aos eixos
     svg.append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", 0 - margin.left)
         .attr("x", 0 - (height / 2))
         .attr("dy", "1em")
         .style("text-anchor", "middle")
-        .text("Value");  // Substitua "Value" pelo título apropriado para o eixo Y
+        .text("Porcentagem");  
 
     svg.append("text")
         .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top) + ")")
         .style("text-anchor", "middle")
-        .text("Level");  // Substitua "Level" pelo título apropriado para o eixo X
+        .text("Level");
+
+    var meanLabels = svg.selectAll(".meanLabel")
+        .data(data)
+        .enter().append("text")
+        .attr("class", "meanLabel")
+        .attr("x", function(d) { return x(d.level) + x.bandwidth()/2; })
+        .attr("y", function(d) { return y(d.values.count / total) + 30; })
+        .text(function(d) { return (d.values.count / total * 100).toFixed(2) + "%"; }) // convert count to percentage and round to two decimal places
+        .attr("text-anchor", "middle") // centralizes the text horizontally
+        .attr("fill", "#000000") // uses the same color as the bar
+        .style("font-weight", "bold"); // makes the font bolder
 }
 
 // Função para preparar os dados
 function prepareData(data, varNumerica, categoria) {
-    // Acesse os dados corretos com base na varNumerica e na categoria.
-    var dataForVar = data[varNumerica][`boxplot_${categoria}`];
+    // Calcular média e desvio padrão em vez de mínimo, máximo e quartis
+    var dataForVar = data[varNumerica][`barplot_${categoria}`];
     return dataForVar;
 }
 
-// Função para gerar dados do boxplot
-function generateBoxplotData(preparedData, varNumerica, categoria) {
-    console.log("iniciando generateBoxplotData")
-    var boxplotData = [];
-    console.log(preparedData)
+// Função para gerar dados do gráfico de barras
+function generatehistogramData(preparedData, varNumerica, categoria) {
+    var histogramData = [];
 
-    for (var subcategoria in preparedData['min']) {
-        boxplotData.push({
+    for (var subcategoria in preparedData['mean']) {
+        histogramData.push({
             level: subcategoria,
             values: {
-                min: preparedData['min'][subcategoria],
-                q1: preparedData['25%'][subcategoria],
-                q2: preparedData['50%'][subcategoria],
-                q3: preparedData['75%'][subcategoria],
-                max: preparedData['max'][subcategoria],
-                outlier: [] // You might need to adjust this based on your data
+                count: preparedData['count'][subcategoria]
             }
         });
     }
 
-    return boxplotData;
+    return histogramData;
 }
 
 // Função auxiliar para obter a lista de variáveis numéricas
@@ -307,28 +256,23 @@ d3.json('/visualizacao').then(function(data) {
         .text(function(d) { return d; });
 
     // Criando o boxplot para a chave selecionada
-    function updateBoxplot() {
-        d3.select('#boxplot').selectAll("svg").remove();
+    function updatehistogram() {
+    d3.select('#histogram').selectAll("svg").remove();
 
-        var varNumerica = dropdown.property('value');
-        var categoria = catDropdown.property('value');
+    var varNumerica = dropdown.property('value');
+    var categoria = catDropdown.property('value');
 
-        var preparedData = prepareData(data, varNumerica, categoria);
-        console.log(preparedData)
-        console.log("foi?")
-        var boxplotData = generateBoxplotData(preparedData, varNumerica, categoria);
-        updateData(boxplotData);
-        console.log("foi?")
-        console.log(boxplotData.data)
-        console.log(boxplotData)
-        createBoxplot(boxplotData);
-    }
+    var preparedData = prepareData(data, varNumerica, categoria);
+    var histogramData = generatehistogramData(preparedData, varNumerica, categoria);
+    updateData(histogramData);
+    createhistogram(histogramData);
+}
 
-    dropdown.on('change', updateBoxplot);
-    catDropdown.on('change', updateBoxplot);
+    dropdown.on('change', updatehistogram);
+    catDropdown.on('change', updatehistogram);
 
         // Gerando o boxplot inicial
-        updateBoxplot();
+        updatehistogram();
     }).catch(function(error){
         console.log(error);
     });
@@ -370,7 +314,7 @@ document.getElementById('updateChartButton').addEventListener('click', function(
   // Atualiza o gráfico com as cores selecionadas
   console.log("oioi")
   console.log(colorScheme)
-  createBoxplot(data, colorScheme);
+  createhistogram(data, colorScheme);
 });
 });
 document.getElementById("saveButton").addEventListener("click", function(){
@@ -394,7 +338,7 @@ document.getElementById("saveButton").addEventListener("click", function(){
         DOMURL.revokeObjectURL(png);
 
         // Usando FileSaver para salvar a imagem
-        saveAs(png, 'boxplot.png');
+        saveAs(png, 'histogram.png');
     };
     
     img.src = url;
