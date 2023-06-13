@@ -7,6 +7,13 @@
     <link href="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/themes/classic.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/pickr.min.js"></script>
     <style>
+        .logo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 400px; /* ajuste o valor de acordo com o tamanho desejado */
+            height: auto; /* para manter a proporção da imagem */
+        }
         body {
             font-family: 'Sora', Light;
             margin: 0;
@@ -23,11 +30,13 @@
             text-align: center;
             max-width: 200%;
             margin-bottom: 20px;
-            background: rgba(0,0,0,0.7);
-            padding: 20px;
+            margin-top: 150px;
+            background: rgba(182, 116, 116, 0.7);
+            padding: 60px;
             border-radius: 8px;
             box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.1);
             overflow-x: auto;
+            top: 80px;
         }
         h1 {
             font-size: 3em;
@@ -54,6 +63,9 @@
     </style>
 </head>
 <body>
+    <header>
+        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+    </header>
     <div class="container">
         <h1>Mapa de correlação (filtrado por {{ filters_string }})</h1>
         <img src="data:image/png;base64,{{ corrgraf }}" alt="Clustermap" width="1800">

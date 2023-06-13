@@ -106,6 +106,13 @@ h1 {
     padding: 0 10px;
     margin-top: 2px;
 }
+.logo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 400px; /* ajuste o valor de acordo com o tamanho desejado */
+            height: auto; /* para manter a proporção da imagem */
+        }
     </style>
 <script>
     $(document).ready(function() {
@@ -313,6 +320,9 @@ $("#CATAVar1").off('change').on('change', function() {
 </script>
 </head>
 <body>
+    <header>
+        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+    </header>
     <div class="form-container">
         <h1>Upload do arquivo Excel</h1>
         <form action="{{ url_for('central') }}" method="post" enctype="multipart/form-data">

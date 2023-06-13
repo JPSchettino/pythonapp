@@ -126,6 +126,9 @@ def upload_file():
 
     return "Invalid file", 400
 
+@app.route('/graficos', methods=['GET', 'POST'])
+def graficos():
+    return render_template('graficos.html')
 
 @app.route('/central', methods=['POST'])
 def central():
@@ -522,7 +525,7 @@ def teste():
 
 def plot_to_base64(fig):
     img = BytesIO()
-    fig.savefig(img, format='png', bbox_inches='tight')
+    fig.savefig(img, format='png', bbox_inches='tight', transparent=True)
     img.seek(0)
     return base64.b64encode(img.read()).decode()
 
@@ -548,7 +551,7 @@ def CORRCATA():
     g = sns.clustermap(corr_matrix.fillna(0), annot=True, fmt='.1f', cmap="RdGy", linewidths=.01, annot_kws={"size":8})
 
     # Save figure
-    g.fig.savefig('temp_plot.png')
+    g.fig.savefig('temp_plot.png', transparent=True)
 
     # Open the image file in binary mode, convert it to base64 and decode it to unicode
     with open('temp_plot.png', 'rb') as f:

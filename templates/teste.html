@@ -7,6 +7,13 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
     <script lang="javascript" src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <style>
+        .logo {
+            position: absolute;
+            bottom: 1px;
+            left: 10px;
+            width: 400px; /* ajuste o valor de acordo com o tamanho desejado */
+            height: auto; /* para manter a proporção da imagem */
+        }
         body {
             font-family: 'Sora', Light;
             margin: 0;
@@ -23,6 +30,7 @@
             text-align: center;
             max-width: 200%;
             margin-bottom: 20px;
+        
         }
         h1, h2 {
             font-size: 3em;
@@ -43,6 +51,8 @@
             margin-left: auto;
             margin-right: auto;
             width: 75%; /* Ajuste para o tamanho desejado */
+            background-color: #ffffff;
+            color: rgb(0, 0, 0);
         }
         .sidebar {
             position: fixed;
@@ -73,6 +83,9 @@
     </style>
 </head> 
 <body>
+    <header>
+        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+    </header>
     <div class="container">
         <h1>Teste de Médias(filtrados por {{ filters_string }})</h1>
         

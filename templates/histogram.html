@@ -9,6 +9,13 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js"></script>
     <style>
+        .logo {
+            position: absolute;
+            top: 1000px;
+            left: 10px;
+            width: 400px; /* ajuste o valor de acordo com o tamanho desejado */
+            height: auto; /* para manter a proporção da imagem */
+        }
         body {
             font-family: 'Sora', Light;
             margin: 0;
@@ -101,6 +108,9 @@
     </style>
 </head>
 <body>
+    <header>
+        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+    </header>
     <div class="container">
         <h1>Gráficos (filtrados por {{ filters_string }})</h1>
 
@@ -230,7 +240,11 @@ function getCategoricalVariables(data) {
     // Então, apenas pegamos as chaves do primeiro conjunto de dados numéricos
     var firstNumericData = data[Object.keys(data)[0]];
     var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
+    var categories = categories.filter(onlyUnique)
     return categories;
+}
+function onlyUnique(value, index, array) {
+  return array.indexOf(value) === index;
 }
 
 d3.json('/visualizacao').then(function(data) {

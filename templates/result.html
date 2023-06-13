@@ -5,6 +5,13 @@
     <title>Resultado</title>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
+        .logo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 400px; /* ajuste o valor de acordo com o tamanho desejado */
+            height: auto; /* para manter a proporção da imagem */
+        }
         body {
             font-family: 'Sora', Light;
             margin: 0;
@@ -70,6 +77,9 @@
     </style>
 </head>
 <body>
+    <header>
+        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+    </header>
     <div class="container">
         <h1>Resumo do arquivo</h1>
             {{ summary_html | safe }}
