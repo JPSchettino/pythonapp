@@ -545,7 +545,7 @@ def CORRCATA():
     corr_matrix = dataframe.corr()
 
     # Set the default figure size
-    plt.rcParams['figure.figsize'] = [48, 48]
+    plt.rcParams['figure.figsize'] = [96, 96]
 
     # Generate the clustermap
     g = sns.clustermap(corr_matrix.fillna(0), annot=True, fmt='.1f', cmap="RdGy", linewidths=.01, annot_kws={"size":8})
