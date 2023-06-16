@@ -203,11 +203,6 @@ function applyFilter() {
     });
 }
 
-
-
-
-
-
         $("#inputFile").change(function() {
             let formData = new FormData();
             formData.append('inputFile', this.files[0]);
@@ -248,7 +243,7 @@ function applyFilter() {
                         options += `<option value="${col}">${col}</option>`;
                     });
 
-                    $("#catVar1, #catVar2, #catVar3, #numVar1, #CATAVar1").html(options);
+                    $("#catVar1, #catVar2, #catVar3, #numVar1,#JAR1, #CATAVar1").html(options);
                 }
             });
         });
@@ -261,6 +256,11 @@ function applyFilter() {
         placeholder: "Selecione as variáveis",
         allowClear: true
     });
+    $('#JAR1').select2({
+        placeholder: "Selecione as variáveis",
+        allowClear: true
+    });
+
 
 
     var isMouseInFormContainer = false;
@@ -365,6 +365,10 @@ $("#CATAVar1").off('change').on('change', function() {
             <div class="mb-3">
                 <label for="numVar1" class="form-label">Variável numérica:</label>
                 <select multiple class="form-select" id="numVar1" name="numVar1[]"></select>
+            </div>
+            <div class="mb-3">
+                <label for="JAR1" class="form-label">Variável JAR:</label>
+                <select multiple class="form-select" id="JAR1" name="JAR1[]"></select>
             </div>
             <div class="mb-3">
                 <label for="CATAVar1" class="form-label">Variáveis CATA:</label>

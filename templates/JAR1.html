@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Gráficos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/themes/classic.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/pickr.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js"></script>
+    <style>
+        .logo {
+            position: absolute;
+            top: 1000px;
+            left: 10px;
+            width: 400px; /* ajuste o valor de acordo com o tamanho desejado */
+            height: auto; /* para manter a proporção da imagem */
+        }
+        body {
+            font-family: 'Sora', Light;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(45deg, #19B1A1, #307FE2);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: auto;
+        }
+        .container {
+            text-align: center;
+            max-width: 200%;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .graph-container {
+            margin-bottom: 20px;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 100%;
+            overflow: auto;
+            padding: 20px;
+            background: rgba(0,0,0,0.7);
+            transition: all 0.5s ease;  /* Transição suave */
+        }
+        .sidebar-hidden {
+            right: -200px;  /* Esconder a sidebar movendo-a para fora da tela */
+        }
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            margin-bottom: 20px;
+        }
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+        }
+        select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0px 2px 6px 1px rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+            color: #333;
+            background-color: white;
+            margin-right: 20px;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            box-shadow: 0px 2px 6px 1px #19B1A1;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            background-color: #19B1A1;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #307FE2;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+    </header>
+    <div class="container">
+        <h1>Boxplots (filtrados por {{ filters_string }})</h1>
+
+        <!-- Adicionando seleção dropdown e gráfico de boxplot -->
+        <div class="graph-container">
+            <h2>Boxplots:</h2>
+            <select id="numVarSelect"></select>
+            <select id="catSelect"></select>
+            <button id="saveButton">Salvar como PNG</button>
+            <div id="boxplot"></div>
+            <div id="colorPickerContainer"></div>
+            <button id="updateChartButton">Atualizar gráfico</button>
+            
+        </div>
+
+        <!-- O resto do seu HTML ... -->
+    </div>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script>
+ window.addEventListener('load', function() {
+ console.log("boxplot.js carregado");
+
+
+
+
+
+
+// Função auxiliar para obter a lista de variáveis numéricas
+function getNumericVariables(data) {
+    return Object.keys(data);
+}
+
+// Função auxiliar para obter a lista de variáveis categóricas
+function getCategoricalVariables(data) {
+    // Aqui assumimos que as categorias são as mesmas em todos os dados numéricos
+    // Então, apenas pegamos as chaves do primeiro conjunto de dados numéricos
+    var firstNumericData = data[Object.keys(data)[0]];
+    var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
+    var categories = categories.filter(onlyUnique)
+    return categories;
+}
+
+function onlyUnique(value, index, array) {
+  return array.indexOf(value) === index;
+}
+
+d3.json('/visualizacao').then(function(data) {
+    console.log(data);
+    console.log(Object.keys(data));
+
+    // Preenchendo a seleção dropdown com as variáveis numéricas
+    var dropdown = d3.select('#numVarSelect');
+    dropdown.selectAll('option')
+        .data(getNumericVariables(data))
+        .enter()
+        .append('option')
+        .attr('value', function(d) { return d; })
+        .text(function(d) { return d; });
+
+    // Preenchendo a seleção dropdown com as categorias
+    var catDropdown = d3.select('#catSelect');
+    catDropdown.selectAll('option')
+        .data(getCategoricalVariables(data)) // Use a função auxiliar para obter as variáveis categóricas.
+        .enter()
+        .append('option')
+        .attr('value', function(d) { return d; })
+        .text(function(d) { return d; });
+
+    // Criando o boxplot para a chave selecionada
+    function updateBoxplot() {
+        d3.select('#boxplot').selectAll("svg").remove();
+
+        var varNumerica = dropdown.property('value');
+        var categoria = catDropdown.property('value');
+
+        var preparedData = prepareData(data, varNumerica, categoria);
+        console.log(preparedData)
+        console.log("foi?")
+        var boxplotData = generateBoxplotData(preparedData, varNumerica, categoria);
+        updateData(boxplotData);
+        console.log("foi?")
+        console.log(boxplotData.data)
+        console.log(boxplotData)
+        createBoxplot(boxplotData);
+    }
+
+    dropdown.on('change', updateBoxplot);
+    catDropdown.on('change', updateBoxplot);
+
+        // Gerando o boxplot inicial
+        updateBoxplot();
+    }).catch(function(error){
+        console.log(error);
+    });
+
+
+function updateData(newData) {
+  data = newData;
+
+  // Limpa os seletores de cores existentes
+  document.getElementById('colorPickerContainer').innerHTML = '';
+
+  // Cria um novo seletor de cores para cada 'level' nos novos dados
+  data.forEach(function(d, i) {
+    var colorPickerDiv = document.createElement('div');
+
+    var label = document.createElement('label');
+    label.setAttribute('for', 'colorPicker_' + i);
+    label.innerText = d.level;
+    colorPickerDiv.appendChild(label);
+
+    var colorPicker = document.createElement('input');
+    colorPicker.setAttribute('type', 'color');
+    colorPicker.setAttribute('id', 'colorPicker_' + i);
+    colorPicker.setAttribute('value', '#000000');
+    colorPickerDiv.appendChild(colorPicker);
+
+    document.getElementById('colorPickerContainer').appendChild(colorPickerDiv);
+  });
+
+
+
+}
+document.getElementById('updateChartButton').addEventListener('click', function() {
+  // Coleta as cores selecionadas
+  var colorScheme = data.map(function(d, i) {
+    return document.getElementById('colorPicker_' + i).value;
+  });
+
+  // Atualiza o gráfico com as cores selecionadas
+  console.log("oioi")
+  console.log(colorScheme)
+  createBoxplot(data, colorScheme);
+});
+});
+document.getElementById("saveButton").addEventListener("click", function(){
+    var svgElement = document.querySelector('svg');
+    var svgString = new XMLSerializer().serializeToString(svgElement);
+
+    var canvas = document.createElement("canvas");
+    // Define o tamanho do canvas para o mesmo tamanho do SVG
+    canvas.width = svgElement.clientWidth;
+    canvas.height = svgElement.clientHeight;
+
+    var ctx = canvas.getContext("2d");
+    var DOMURL = self.URL || self.webkitURL || self;
+    var img = new Image();
+    var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+    var url = DOMURL.createObjectURL(svg);
+    
+    img.onload = function() {
+        ctx.drawImage(img, 0, 0);
+        var png = canvas.toDataURL("image/png");
+        DOMURL.revokeObjectURL(png);
+
+        // Usando FileSaver para salvar a imagem
+        saveAs(png, 'boxplot.png');
+    };
+    
+    img.src = url;
+});
+</script>
+    
+</body>
+</html>

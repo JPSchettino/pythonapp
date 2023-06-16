@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JAR Page</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        body {
+            font-family: 'Sora', Light;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(45deg, #19B1A1, #307FE2);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: auto;
+        }
+        .chartContainer {
+            text-align: center;
+            max-width: 200%;
+            margin-bottom: 20px;
+            margin-top: 150px;
+            background: rgba(182, 116, 116, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            top: 80px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        img {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+        }
+        a {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: #307FE2;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.5s ease;
+        }
+        a:hover {
+            background-color: #19B1A1;
+        }
+        select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0px 2px 6px 1px rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+            color: #333;
+            background-color: white;
+            margin-right: 20px;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            box-shadow: 0px 2px 6px 1px #19B1A1;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            background-color: #19B1A1;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #307FE2;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="filtersHeader">Gráfico JAR</h1>
+    <select id="variableDropdown1"></select>
+    <select id="variableDropdown2"></select>
+    <button id="updateGraph">Atualizar gráfico</button>
+    <div id="chartContainer">
+        <img id="chartImage" src="" alt="Clustermap" width="3800">
+    </div> <!-- Fecha a div do container -->
+
+    <script>
+    function updateDropdowns() {
+        $.get("/get_variables", function(data) {
+            $('#variableDropdown1').empty();
+            $('#variableDropdown2').empty();
+            for(var i=0; i<data.length; i++) {
+                $('#variableDropdown1').append('<option value="' + data[i] + '">' + data[i] + '</option>');
+                $('#variableDropdown2').append('<option value="' + data[i] + '">' + data[i] + '</option>');
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        updateDropdowns();
+
+        $('#updateGraph').click(function() {
+            var selectedVariable1 = $('#variableDropdown1').val();
+            var selectedVariable2 = $('#variableDropdown2').val();
+
+            $.ajax({
+                url: '/JAR',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify([selectedVariable1, selectedVariable2]),
+                dataType: 'json', // Para tratar a resposta como JSON
+                success: function(data) {
+                    $('#chartImage').attr('src', 'data:image/png;base64,' + data.corrgraf);
+                    $('#filtersHeader').text('Mapa de correlação (filtrado por ' + data.filters_string + ')');
+                    updateDropdowns();
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>
