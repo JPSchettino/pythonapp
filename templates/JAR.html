@@ -104,6 +104,18 @@
         <select id="variableDropdown1"></select>
         <select id="variableDropdown2"></select>
         <button id="updateGraph">Atualizar gráfico</button>
+        <div id="colorPickers">
+            <label for="color1">Muito abaixo do ideal:</label>
+            <input type="color" id="color1" name="color1" value="#9AD8E6">
+            <label for="color2">Abaixo do ideal:</label>
+            <input type="color" id="color2" name="color2" value="#74A1DB">
+            <label for="color3">Ideal:</label>
+            <input type="color" id="color3" name="color3" value="#fcec74">
+            <label for="color4">Acima do ideal:</label>
+            <input type="color" id="color4" name="color4" value="#F0A6E9">
+            <label for="color5">Muito acima do ideal:</label>
+            <input type="color" id="color5" name="color5" value="#FF309E">
+        </div>
     </div>
     <div id="chartContainer">
         <img id="chartImage" src="" alt="Clustermap">
@@ -146,23 +158,32 @@
                 updateDropdowns(selectedVariable1, selectedVariable2);
             });
             $('#updateGraph').click(function() {
-            var selectedVariable1 = $('#variableDropdown1').val();
-            var selectedVariable2 = $('#variableDropdown2').val();
+    var selectedVariable1 = $('#variableDropdown1').val();
+    var selectedVariable2 = $('#variableDropdown2').val();
+    var colors = {
+        "muito abaixo do ideal": $('#color1').val(),
+        "abaixo do ideal": $('#color2').val(),
+        "ideal": $('#color3').val(),
+        "acima do ideal": $('#color4').val(),
+        "muito acima do ideal": $('#color5').val()
+    };
 
-            $.ajax({
-                url: '/JAR',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify([selectedVariable1, selectedVariable2]),
-                dataType: 'json', // Para tratar a resposta como JSON
-                success: function(data) {
-                    $('#chartImage').attr('src', 'data:image/png;base64,' + data.corrgraf);
-                    $('#filtersHeader').text('Gráficos JAR (filtrados por ' + data.filters_string + ')');
-                    updateDropdowns(selectedVariable1);
-                }
-            });
-        });
+    $.ajax({
+        url: '/JAR',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify([selectedVariable1, selectedVariable2, colors]), // include the colors here
+        dataType: 'json', 
+        success: function(data) {
+            $('#chartImage').attr('src', 'data:image/png;base64,' + data.corrgraf);
+            $('#filtersHeader').text('Gráficos JAR (filtrados por ' + data.filters_string + ')');
+            updateDropdowns(selectedVariable1);
+        }
+    });
+});
+
     });
 </script>
 </body>
 </html>
+

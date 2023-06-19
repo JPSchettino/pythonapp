@@ -594,18 +594,9 @@ def jar():
         jar_columns = session.get('jar_vars', [])
         print(jar_columns)
         # Ordem das categorias e suas cores
-        categories_order_colors = {
-            "muito abaixo do ideal": "#9AD8E6",
-            "abaixo do ideal": "#74A1DB",
-            "ideal": "#fcec74",
-            "acima do ideal": "#F0A6E9",
-            "muito acima do ideal": "#FF309E",
-            1: "#9AD8E6",
-            2: "#74A1DB",
-            3: "#fcec74",
-            4: "#F0A6E9",
-            5: "#FF309E",
-        }
+        categories_order_colors = selected_variables[2]
+
+        print(categories_order_colors)
 
         numeric_to_category = {
             1: "muito abaixo do ideal",
@@ -641,14 +632,6 @@ def jar():
         # Criando os gráficos para cada coluna JAR e faixa etária
         # Para cada produto na lista, crie gráficos
         for p, product_name in enumerate(product_names):
-            #subplots_per_group = len(age_groups) + 1
-            #total_height = 35 * num_products
-            #subplot_height = total_height / (num_products * subplots_per_group)
-            #title_position_inches = 0.6  # Adjust this value as needed
-            #title_y = title_position_inches / subplot_height
-            #axes[p * len(age_groups), 0].set_title(product_name, loc='left', fontsize=15, fontweight='bold', y=title_y)
-                # Add a title using annotate
-            
             
             # Filtra os dados do dataframe
             filtered_df = df[df[cat_1] == product_name]
