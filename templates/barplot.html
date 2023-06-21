@@ -417,7 +417,15 @@ document.getElementById("saveButton").addEventListener("click", function(){
         DOMURL.revokeObjectURL(png);
 
         // Usando FileSaver para salvar a imagem
-        saveAs(png, 'boxplot.png');
+
+        var varNumerica = d3.select('#numVarSelect').property('value');
+        var categoria = d3.select('#catSelect').property('value');
+
+        var filters_string = "{{ filters_string }}"; // Use a sintaxe Jinja para inserir filters_string
+
+        var filename = 'barplot_' + filters_string + '_' + varNumerica + '_' + categoria + '.png';
+        // Usando FileSaver para salvar a imagem
+        saveAs(png, filename);
     };
     
     img.src = url;

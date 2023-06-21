@@ -351,8 +351,14 @@ document.getElementById("saveButton").addEventListener("click", function(){
         var png = canvas.toDataURL("image/png");
         DOMURL.revokeObjectURL(png);
 
+        
+        var categoria = d3.select('#catSelect').property('value');
+
+        var filters_string = "{{ filters_string }}"; // Use a sintaxe Jinja para inserir filters_string
+
+        var filename = 'histograma_' + filters_string + '_' + categoria + '.png';
         // Usando FileSaver para salvar a imagem
-        saveAs(png, 'histogram.png');
+        saveAs(png, filename);
     };
     
     img.src = url;
