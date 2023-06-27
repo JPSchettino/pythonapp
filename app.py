@@ -136,7 +136,7 @@ def central():
     if request.method == 'POST':
         
         # Salva cat_vars e num_vars na sessão
-        session['cat_vars'] = [request.form.get(f'catVar{i}') for i in range(1, 4) if request.form.get(f'catVar{i}')]
+        session['cat_vars'] = [request.form.get(f'catVar{i}') for i in range(1, 5) if request.form.get(f'catVar{i}')]
         session['num_vars'] = request.form.getlist('numVar1[]')
         session['cata_vars'] = request.form.getlist('CATAVar1[]')
         session['jar_vars'] = request.form.getlist('JAR1[]')
@@ -595,7 +595,9 @@ def jar():
         print(jar_columns)
         # Ordem das categorias e suas cores
         categories_order_colors = selected_variables[2]
-
+        cortitulo = selected_variables[3]
+        corsubtitulo = selected_variables[4]
+        corrotulo = selected_variables[5]
         print(categories_order_colors)
 
         numeric_to_category = {
@@ -668,23 +670,28 @@ def jar():
 
                         # Adicionar a legenda apenas na primeira iteração
                         if p == 0 and i == 0 and j == 0:
-                            fig.legend(loc='upper center', bbox_to_anchor=(0.125, 0.74))
+                            #fig.legend(loc='upper center', bbox_to_anchor=(0.125, 0.74), fancybox=True, shadow=True)
+                            legend = fig.legend(loc='upper center', bbox_to_anchor=(0.5, 0.6), fancybox=True, shadow=True,ncol=5)
+                            for text in legend.get_texts():
+                                text.set_fontsize('xx-large')  # altera o tamanho da fonte
+                                text.set_fontname('Sora')  # altera a fonte
                             
                         # Mostrar a porcentagem se for maior que 5%
                         if prop >= 0.05:
                             percentage = f"{prop * 100:.0f}%"
-                            ax.text(left - prop / 2, 0, percentage, ha="center", va="center", fontsize=9.2)
+                            ax.text(left - prop / 2, 0, percentage, ha="center", va="center", fontsize=8.8+prop*10, fontweight='bold',color = corrotulo)
 
                         if i == 0 and j == len(jar_columns) // 2:
-                            ax.annotate(product_name, xy=(0.5, 1.5), xycoords='axes fraction', ha='center', fontsize=15, fontweight='bold', color='red')
+                            ax.annotate(product_name, xy=(0.5, 1.8), xycoords='axes fraction', ha='center', fontsize=15, fontweight='bold', color=cortitulo)
 
                     # Remover o que está antes do "_" e o próprio "_"
                     short_title = jar_column.split("_", 1)[-1]
-                    ax.set_title(f"{short_title} - {age_group} - {product_name}", fontsize=10)
+                    #subtitle = ax.set_title(f"{short_title} - {age_group} - {product_name}", fontsize=10)
+                    ax.annotate(f"{short_title} - {age_group}", xy=(0.5, 1.2), xycoords='axes fraction', ha='center', fontsize=11, va='center', fontweight='bold',color = corsubtitulo)
                     ax.set_xlim(0, 1)
                     ax.set_yticks([])
                     ax.set_xticks([])
-                    ax.set_xlabel("Proporção" if p == num_products - 1 and i == len(age_groups) - 1 else None)
+                    
             for j in range(len(jar_columns)):
                 ax = axes[(p + 1) * (len(age_groups) + 1) - 1, j]
                 ax.axis('off')  # This makes the subplot blank
@@ -694,9 +701,9 @@ def jar():
         plt.subplots_adjust(left=0.1,
                             bottom=0.6,
                             right=0.9,
-                            top=0.72,
+                            top=0.7,
                             wspace=0.4,
-                            hspace=0.3)
+                            hspace=0.6)
 
 
         

@@ -8,8 +8,8 @@
             font-family: 'Sora', Light;
             margin: 0;
             padding: 0;
-            background: linear-gradient(45deg, #19B1A1, #307FE2);
-            color: white;
+            background: linear-gradient(45deg, #ffffff, #ffffff);
+            color: rgb(12, 1, 1);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -19,8 +19,9 @@
         .controls {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 40px;
             margin-top: 50px;
+            margin-bottom: 50px;
         }
         .chartContainer {
             text-align: center;
@@ -47,7 +48,7 @@
             display: inline-block;
             margin: 20px 0;
             padding: 10px 20px;
-            background-color: #307FE2;
+            background-color: #fdfdfd;
             color: white;
             text-decoration: none;
             border-radius: 4px;
@@ -96,6 +97,17 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
+        #colorPickers {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #colorPickers label {
+            margin: 5px 0;
+        }
+
     </style>
 </head>
 <body>
@@ -103,19 +115,30 @@
     <div class="controls">
         <select id="variableDropdown1"></select>
         <select id="variableDropdown2"></select>
-        <div id="colorPickers">
-            <label for="color1">Muito abaixo do ideal:</label>
-            <input type="color" id="color1" name="color1" value="#9AD8E6">
-            <label for="color2">Abaixo do ideal:</label>
-            <input type="color" id="color2" name="color2" value="#74A1DB">
-            <label for="color3">Ideal:</label>
-            <input type="color" id="color3" name="color3" value="#fcec74">
-            <label for="color4">Acima do ideal:</label>
-            <input type="color" id="color4" name="color4" value="#F0A6E9">
-            <label for="color5">Muito acima do ideal:</label>
-            <input type="color" id="color5" name="color5" value="#FF309E">
-        </div>
         <button id="updateGraph">Atualizar gráfico</button>
+        <button id="saveButton">Salvar como PNG</button>
+    </div>
+    </div> 
+    </div>
+    <div id="colorPickers">
+        <label for="color1">Muito abaixo do ideal:</label>
+        <input type="color" id="color1" name="color1" value="#9AD8E6">
+        <label for="color2">Abaixo do ideal:</label>
+        <input type="color" id="color2" name="color2" value="#74A1DB">
+        <label for="color3">Ideal:</label>
+        <input type="color" id="color3" name="color3" value="#fcec74">
+        <label for="color4">Acima do ideal:</label>
+        <input type="color" id="color4" name="color4" value="#F0A6E9">
+        <label for="color5">Muito acima do ideal:</label>
+        <input type="color" id="color5" name="color5" value="#FF309E">
+    </div>
+    <div>
+        <label for="color6">Cor do título:</label>
+        <input type="color" id="color6" name="color6" value="#000000">
+        <label for="color7">Cor do subtítulo:</label>
+        <input type="color" id="color7" name="color7" value="#000000">
+        <label for="color8">Cor do rótulo:</label>
+        <input type="color" id="color8" name="color8" value="#000000">
     </div>
     <div id="chartContainer">
         <img id="chartImage" src="" alt="Clustermap">
@@ -158,31 +181,57 @@
                 updateDropdowns(selectedVariable1, selectedVariable2);
             });
             $('#updateGraph').click(function() {
+                var selectedVariable1 = $('#variableDropdown1').val();
+                var selectedVariable2 = $('#variableDropdown2').val();
+                var colors = {
+                    "muito abaixo do ideal": $('#color1').val(),
+                    "abaixo do ideal": $('#color2').val(),
+                    "ideal": $('#color3').val(),
+                    "acima do ideal": $('#color4').val(),
+                    "muito acima do ideal": $('#color5').val()
+                };
+                var colorTitulo = $('#color6').val()
+
+                var colorsubTitulo = $('#color7').val()
+
+                var colorRotulo = $('#color8').val()
+    
+                $.ajax({
+                    url: '/JAR',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify([selectedVariable1, selectedVariable2, colors, colorTitulo,colorsubTitulo,colorRotulo]), // include the colors here
+                    dataType: 'json', 
+                    success: function(data) {
+                        $('#chartImage').attr('src', 'data:image/png;base64,' + data.corrgraf);
+                        $('#filtersHeader').text('Gráficos JAR (filtrados por ' + data.filters_string + ')');
+                        updateDropdowns(selectedVariable1, selectedVariable2); // Note the corrected call here
+                    }
+                });
+            });
+    
+        });
+
+    document.getElementById("saveButton").addEventListener("click", function(){
+    var imgElement = document.getElementById('chartImage');
+    
     var selectedVariable1 = $('#variableDropdown1').val();
     var selectedVariable2 = $('#variableDropdown2').val();
-    var colors = {
-        "muito abaixo do ideal": $('#color1').val(),
-        "abaixo do ideal": $('#color2').val(),
-        "ideal": $('#color3').val(),
-        "acima do ideal": $('#color4').val(),
-        "muito acima do ideal": $('#color5').val()
-    };
 
-    $.ajax({
-        url: '/JAR',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify([selectedVariable1, selectedVariable2, colors]), // include the colors here
-        dataType: 'json', 
-        success: function(data) {
-            $('#chartImage').attr('src', 'data:image/png;base64,' + data.corrgraf);
-            $('#filtersHeader').text('Gráficos JAR (filtrados por ' + data.filters_string + ')');
-            updateDropdowns(selectedVariable1);
-        }
-    });
+    var filters_string = $('#filtersHeader').text().split(' ')[3]; // We assume that the filters string is the fourth word of the '#filtersHeader' text
+
+    var filename = 'JARPLOT_' + filters_string + '_' + selectedVariable1 + '_' + selectedVariable2 + '.png';
+
+    fetch(imgElement.src)
+        .then(response => response.blob())
+        .then(blob => {
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+        });
 });
-
-    });
 </script>
 </body>
 </html>

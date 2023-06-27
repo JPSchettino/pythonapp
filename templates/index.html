@@ -243,7 +243,7 @@ function applyFilter() {
                         options += `<option value="${col}">${col}</option>`;
                     });
 
-                    $("#catVar1, #catVar2, #catVar3, #numVar1,#JAR1, #CATAVar1").html(options);
+                    $("#catVar1, #catVar2, #catVar3,#catVar4, #numVar1,#JAR1, #CATAVar1").html(options);
                 }
             });
         });
@@ -361,6 +361,10 @@ $("#CATAVar1").off('change').on('change', function() {
             <div class="mb-3">
                 <label for="catVar3" class="form-label">Variável categórica 3:</label>
                 <select class="form-select" id="catVar3" name="catVar3"></select>
+            </div>
+            <div class="mb-3">
+                <label for="catVar4" class="form-label">Variável categórica 4:</label>
+                <select class="form-select" id="catVar4" name="catVar4"></select>
             </div>
             <div class="mb-3">
                 <label for="numVar1" class="form-label">Variável numérica:</label>
