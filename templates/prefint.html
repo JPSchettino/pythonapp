@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mapa de preferencia interno</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        .logo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 300px; /* ajuste o valor de acordo com o tamanho desejado */
+            height: auto; /* para manter a proporção da imagem */
+        }
+        body {
+            font-family: 'Sora', Light;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(45deg, #ffffff, #ffffff);
+            color: rgb(12, 1, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: auto;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        .chartContainer {
+            text-align: center;
+            max-width: 80%;
+            margin-bottom: 20px;
+            margin-top: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.3);
+            overflow-x: auto;
+            top: 80px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        img {
+            display: block;
+            margin: 20px auto;
+            max-width: 100%;
+        }
+        a {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: #fdfdfd;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.5s ease;
+        }
+        a:hover {
+            background-color: #19B1A1;
+        }
+        select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0px 2px 6px 1px rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+            color: #333;
+            background-color: white;
+            margin-right: 20px;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            box-shadow: 0px 2px 6px 1px #19B1A1;
+            outline: none;
+        }
+        input {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0px 2px 6px 1px rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+            color: #333;
+            background-color: white;
+            margin-right: 20px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            box-shadow: 0px 2px 6px 1px #19B1A1;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            background-color: #19B1A1;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #307FE2;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #colorPickers {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #colorPickers label {
+            margin: 5px 0;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <img class = "logo" src="static\logo_preferencial_FOODTEST1.jpg" alt="Logo da Empresa">
+    </header>
+    <h1 id="filtersHeader">Mapa de preferencia interno</h1>
+    <div class="controls">
+        <select id="variableDropdown1"></select>
+        <select id="variableDropdown2"></select>
+        <button id="updateGraph">Atualizar gráfico</button>
+        <button id="saveButton">Salvar como PNG</button>
+        <input type="checkbox" id="showProducts" name="showProducts" value="Mostrar produtos">
+        <label for="showProducts"> Mostrar produtos</label><br>
+        <input type="checkbox" id="showHedonic" name="showHedonic" value="Mostrar hedonicas">
+        <label for="showHedonic"> Mostrar hedonicas</label><br>
+    </div> 
+    <div id="chartContainer">
+        <img id="chartImage1" src="" alt="Clustermap">
+    </div> <!-- Fecha a div do container -->
+    <div id="chartContainer">
+        <img id="chartImage2" src="" alt="Clustermap">
+    </div> <!-- Fecha a div do container -->
+
+    <script>
+               function updateDropdowns(selectedVariable1, selectedVariable2) {
+            $.get("/get_variables", function(data) {
+                $('#variableDropdown1').empty();
+                $('#variableDropdown2').empty();
+                for(var i=0; i<data.length; i++) {
+                    if (data[i] !== selectedVariable2) {
+                        $('#variableDropdown1').append('<option value="' + data[i] + '">' + data[i] + '</option>');
+                    }
+                    if (data[i] !== selectedVariable1) {
+                        $('#variableDropdown2').append('<option value="' + data[i] + '">' + data[i] + '</option>');
+                    }
+                }
+                $('#variableDropdown1').val(selectedVariable1);
+                $('#variableDropdown2').val(selectedVariable2);
+            });
+        }
+    
+        $(document).ready(function() {
+            $.get("/get_variables", function(data) {
+                if (data.length > 1) {
+                    updateDropdowns(data[0], data[1]);
+                }
+            });
+    
+            $('#variableDropdown1').change(function() {
+                var selectedVariable1 = $(this).val();
+                var selectedVariable2 = $('#variableDropdown2').val();
+                updateDropdowns(selectedVariable1, selectedVariable2);
+            });
+    
+
+            $('#updateGraph').click(function() {
+                console.log("updateGraph clicked");  // Added console.log
+                var selectedVariable1 = $('#variableDropdown1').val();
+                var selectedVariable2 = $('#variableDropdown2').val();
+                var showProducts = $('#showProducts').is(":checked");
+                var showHedonic = $('#showHedonic').is(":checked");
+                console.log(selectedVariable1,selectedVariable2, showProducts, showHedonic);  // Added console.log
+                $.ajax({
+                    url: '/prefint',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        variable1: selectedVariable1, 
+                        variable2: selectedVariable2,
+                        showProducts: showProducts, 
+                        showHedonic: showHedonic,
+                    }), 
+                    dataType: 'json', 
+                    success: function(data) {
+                        $('#chartImage1').attr('src', 'data:image/png;base64,' + data.graf1);
+                        $('#chartImage2').attr('src', 'data:image/png;base64,' + data.graf2);
+                        $('#filtersHeader').text('Gráficos JAR (filtrados por ' + data.filters_string + ')');
+                        updateDropdowns(selectedVariable1, selectedVariable2); 
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {  // Added error handling
+                        console.log("AJAX error: " + textStatus + ' : ' + errorThrown);
+                    }
+                });
+            });
+        });
+
+        document.getElementById("saveButton").addEventListener("click", function(){
+            console.log("saveButton clicked");  // Added console.log
+            var imgElement = document.getElementById('chartImage');
+            var selectedVariable = $('#variableDropdown1').val();
+            var filters_string = $('#filtersHeader').text().split(' ')[3]; // We assume that the filters string is the fourth word of the '#filtersHeader' text
+            var filename = 'JARPLOT_' + filters_string + '_' + selectedVariable + '.png';
+
+            fetch(imgElement.src)
+                .then(response => response.blob())
+                .then(blob => {
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                });
+        });
+    </script>
+</body>
+</html>
+
+
+

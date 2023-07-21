@@ -46,6 +46,10 @@ import seaborn as sns
 app.config['JSON_SORT_KEYS'] = False
 app.config['JSON_AS_ASCII'] = False
 from bs4 import BeautifulSoup
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.neighbors import KernelDensity
+from PIL import Image
 
 Session(app)
 
@@ -581,6 +585,12 @@ def get_variables():
     variable_names =  session.get('cat_vars', [])
     return jsonify(variable_names)
 
+@app.route('/get_variables1', methods=['GET'])
+def get_variables1():
+    variable_names =  session.get('cat_vars', [])
+    return jsonify(variable_names)
+
+
 @app.route('/JAR', methods=['GET', 'POST'])
 def jar():
     if 'dataframe' not in session:
@@ -734,7 +744,184 @@ def jar():
         return render_template('JAR.html')
 
 
+import string
+from matplotlib.ticker import FuncFormatter
+from umap import UMAP
 
+@app.route('/prefint', methods=['POST','GET'])
+def prefint():
+    if 'dataframe' not in session:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        print("chegueiaqui")
+        print(request.data)
+        selected_variables = request.get_json(force=True)
+        
+        print(selected_variables)
+        dataframe = pd.read_json(session['filtered_dataframe'])
+        num_vars = session.get('num_vars', [])
+        cat_1 = selected_variables['variable1']
+        cat_2 = selected_variables['variable2']
+        showProducts = selected_variables.get('showProducts', False)
+        showHedonic = selected_variables.get('showHedonic', False)
+
+        # Filter the dataframe to include only the 'cata_vars' columns
+        dataframe = dataframe[num_vars + [cat_1]+ [cat_2]]
+
+        hedonic_scale_mapping = {
+            'desgosteimuitíssimo': 1,
+            'desgosteimuito': 2,
+            'desgosteimoderadamente': 3,
+            'desgosteiligeiramente': 4,
+            'nãogosteinemdesgostei': 5,
+            'gosteiligeiramente': 6,
+            'gosteimoderadamente': 7,
+            'gosteimuito': 8,
+            'gosteimuitíssimo': 9
+        }
+
+        for col in num_vars:
+            if dataframe[col].dtype == object:  # np.object significa que é uma string
+                print(f"A coluna '{col}' contém strings. Convertendo para numéricos...")
+                dataframe[col] = dataframe[col].apply(lambda x: ''.join(ch for ch in str(x) if ch not in string.punctuation))  # remove pontuação
+                dataframe[col] = dataframe[col].str.lower().str.strip()  # transforma para minúsculas e remove espaços em branco
+                dataframe[col] = dataframe[col].str.replace(' ', '')
+
+                unique_values = dataframe[col].unique()
+                print(f"Valores únicos na coluna '{col}' antes da conversão: {unique_values}")
+
+                dataframe[col] = dataframe[col].map(hedonic_scale_mapping)
+                
+                null_values_after_conversion = dataframe[col].isnull().sum()
+                if null_values_after_conversion > 0:
+                    print(f"A coluna '{col}' contém {null_values_after_conversion} valores nulos após a conversão.")
+            elif np.issubdtype(dataframe[col].dtype, np.number):
+                print(f"A coluna '{col}' já contém numéricos.")
+            else:
+                print(f"Os valores da coluna '{col}' não são nem string nem numéricos.")
+
+        print(dataframe[num_vars])
+
+        def plot_map(plot_type, category=None, data=dataframe, show_products=showProducts, show_hedonic=showHedonic, produto = cat_1, use_umap=True,hedonic_features =num_vars):
+            df = pd.DataFrame(data)
+
+            scaler = StandardScaler()
+            df_normalized = pd.DataFrame(scaler.fit_transform(df.select_dtypes(include=[np.number])), columns=df.select_dtypes(include=[np.number]).columns, index=df.index)
+
+            if use_umap:
+                umap = UMAP(n_components=2, random_state=42)
+                pca_result = umap.fit_transform(df_normalized)
+                coordenadas = pd.DataFrame(pca_result, columns=['UMAP1', 'UMAP2'], index=df.index)
+                loadings = None
+            else:
+                pca = PCA(n_components=2)
+                pca_result = pca.fit_transform(df_normalized)
+                coordenadas = pd.DataFrame(pca_result, columns=['PC1', 'PC2'], index=df.index)
+                loadings = pd.DataFrame(pca.components_.T, columns=['PC1', 'PC2'], index=df.select_dtypes(include=[np.number]).columns)
+            
+
+            if plot_type == 'scatter' and category:
+                unique_categories = df[category].unique()
+                cmap = plt.get_cmap('viridis', len(unique_categories))
+                color_dict = {cat: cmap(i) for i, cat in enumerate(unique_categories)}
+                df['color'] = df[category].map(color_dict)
+
+            n = pca_result.shape[0]
+            h = n**(-1/6)
+            kde = KernelDensity(bandwidth=h, kernel='gaussian')
+            kde.fit(pca_result)
+            x_lim = max(abs(pca_result[:, 0].min()), pca_result[:, 0].max())
+            y_lim = max(abs(pca_result[:, 1].min()), pca_result[:, 1].max())
+
+            x = np.linspace(-x_lim, x_lim, 100)
+            y = np.linspace(-y_lim, y_lim, 100)
+            X, Y = np.meshgrid(x, y)
+            xy = np.vstack([X.ravel(), Y.ravel()]).T
+            Z = np.exp(kde.score_samples(xy)).reshape(X.shape)
+            Z_percentage = 100 * Z
+            
+
+            fig, ax = plt.subplots(figsize=(10,10))
+            if plot_type == 'scatter':
+                scatter = ax.scatter(coordenadas['UMAP1'] if use_umap else coordenadas['PC1'],coordenadas['UMAP2'] if use_umap else coordenadas['PC2'], c=df['color'], s=500, alpha=0.7, edgecolors='w', linewidths=2)
+                handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=v, markersize=10) for v in color_dict.values()]
+                ax.legend(handles, color_dict.keys(), title=category)
+            elif plot_type == 'kde':
+                n_levels = 25
+                c = ax.contourf(X, Y, Z_percentage, levels=n_levels, cmap='viridis', alpha=0.5)
+                cbar = fig.colorbar(c)
+                
+                def to_percent(y, position):
+                    return str(y) + '%'
+                
+                formatter = FuncFormatter(to_percent)
+
+                cbar.ax.yaxis.set_major_formatter(formatter)
+
+                cbar.set_label('Densidade (%)', fontsize=14)
+
+            if show_products:
+                for i, product in enumerate(df[produto].unique()):
+                    ax.text(coordenadas.loc[df[produto] == product, 'UMAP1' if use_umap else 'PC1'].mean(), coordenadas.loc[df[produto] == product, 'UMAP2' if use_umap else 'PC2'].mean(), product, fontsize=12, ha='center')
+
+            if show_hedonic and not use_umap:
+                for i, feature in enumerate(df.select_dtypes(include=[np.number]).columns):
+                    ax.arrow(0, 0, loadings.loc[feature, 'PC1']*3, loadings.loc[feature, 'PC2']*3, color='r', head_width=0.1, head_length=0.1)
+                    ax.text(loadings.loc[feature, 'PC1']*3 + 0.2, loadings.loc[feature, 'PC2']*3 + 0.2, feature, color='r', ha='center', va='center')
+
+            if show_hedonic and use_umap:
+                for hedonic in hedonic_features:
+                    umap_hedonic = UMAP(n_components=2, random_state=42)  # set random_state to a fixed value
+                    hedonic_data = df_normalized[[hedonic]]  # select only the hedonic feature
+                    umap_result_hedonic = umap_hedonic.fit_transform(hedonic_data)
+                    
+                    # compute the "average direction" of this hedonic feature
+                    avg_direction = umap_result_hedonic.mean(axis=0) - pca_result.mean(axis=0)
+                    avg_direction /= np.linalg.norm(avg_direction)  # normalize to unit vector
+                    
+                    # plot the arrow for this hedonic feature
+                    ax.arrow(pca_result.mean(axis=0)[0], pca_result.mean(axis=0)[1],
+                            avg_direction[0], avg_direction[1], color='r', head_width=0.1, head_length=0.1)
+                    ax.text(pca_result.mean(axis=0)[0] + avg_direction[0], pca_result.mean(axis=0)[1] + avg_direction[1],
+                            hedonic, color='r', ha='center', va='center')
+                    
+
+            ax.set_xlim(-x_lim, x_lim)
+            ax.set_ylim(-y_lim, y_lim)
+
+            ax.set_xlabel('UMAP1' if use_umap else 'PC1 - {0:.1f}%'.format(pca.explained_variance_ratio_[0]*100), fontsize=14)
+            ax.set_ylabel('UMAP2' if use_umap else 'PC2 - {0:.1f}%'.format(pca.explained_variance_ratio_[1]*100), fontsize=14)
+            ax.set_title('Mapa de Preferência Interna', fontsize=20)
+
+            ax.grid(True)
+            plt.xticks([])
+            plt.yticks([])
+
+                        # Save figure
+            fig.savefig('temp_plot.png',transparent=True,bbox_inches='tight')
+
+
+            # Open the image file in binary mode, convert it to base64 and decode it to unicode
+            with open('temp_plot.png', 'rb') as f:
+                image = base64.b64encode(f.read()).decode()
+
+            # Remove the image file as it's no longer needed
+            os.remove('temp_plot.png')
+
+            # Reset the default figure size
+            plt.rcParams['figure.figsize'] = [6.4, 4.8]
+            return image
+
+        # Render the images
+        fig1 = plot_map('scatter', cat_2, dataframe, produto=cat_1)
+        fig2 = plot_map('kde', None, dataframe, produto = cat_1)
+
+        # Save the images to BytesIO objects
+      
+
+        return jsonify({"graf1": fig1,"graf2": fig2,  "filters_string": "your_filters_string_here"})
+    else:
+        return render_template('prefint.html')
 
 
 if __name__ == '__main__':
