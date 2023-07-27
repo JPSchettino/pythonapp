@@ -130,6 +130,53 @@
         #colorPickers label {
             margin: 5px 0;
         }
+            input[type="checkbox"] {
+        visibility: hidden;
+    }
+
+    input[type="checkbox"] + label {
+        position: relative;
+        padding-left: 35px;
+        cursor: pointer;
+        display: inline-block;
+        color: #666;
+        font-size: 14px;
+    }
+
+    input[type="checkbox"] + label:before {
+        content: '';
+        position: absolute;
+        display: inline-block;
+        width: 23px;
+        height: 23px;
+        left: 0;
+        border: 2px solid #999;
+        border-radius: 3px;
+        background-color: #fff;
+        transition: border 0.3s;
+    }
+
+    input[type="checkbox"]:checked + label:before {
+        border-color: #19B1A1;
+    }
+
+    input[type="checkbox"] + label:after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 8px;
+        left: 7px;
+        top: 7px;
+        border-left: 2px solid;
+        border-bottom: 2px solid;
+        transform: rotate(-45deg);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    input[type="checkbox"]:checked + label:after {
+        opacity: 1;
+    }
 
     </style>
 </head>
@@ -141,6 +188,12 @@
     <div class="controls">
         <select id="variableDropdown1"></select>
         <select id="variableDropdown2"></select>
+        <select id="fixedDropdown">
+            <option value="ICA">ICA</option>
+            <option value="PCA">PCA</option>
+            <option value="FA">FA</option>
+            <option value="LDA">LDA</option>
+        </select>
         <button id="updateGraph">Atualizar gráfico</button>
         <button id="saveButton">Salvar como PNG</button>
         <input type="checkbox" id="showProducts" name="showProducts" value="Mostrar produtos">
@@ -156,7 +209,7 @@
     </div> <!-- Fecha a div do container -->
 
     <script>
-               function updateDropdowns(selectedVariable1, selectedVariable2) {
+    function updateDropdowns(selectedVariable1, selectedVariable2) {
             $.get("/get_variables", function(data) {
                 $('#variableDropdown1').empty();
                 $('#variableDropdown2').empty();
@@ -191,9 +244,10 @@
                 console.log("updateGraph clicked");  // Added console.log
                 var selectedVariable1 = $('#variableDropdown1').val();
                 var selectedVariable2 = $('#variableDropdown2').val();
+                var selectedVariable3 = $('#fixedDropdown').val();
                 var showProducts = $('#showProducts').is(":checked");
                 var showHedonic = $('#showHedonic').is(":checked");
-                console.log(selectedVariable1,selectedVariable2, showProducts, showHedonic);  // Added console.log
+                console.log(selectedVariable1,selectedVariable2, showProducts, showHedonic,selectedVariable3);  // Added console.log
                 $.ajax({
                     url: '/prefint',
                     type: 'POST',
@@ -203,6 +257,7 @@
                         variable2: selectedVariable2,
                         showProducts: showProducts, 
                         showHedonic: showHedonic,
+                        variable3: selectedVariable3,
                     }), 
                     dataType: 'json', 
                     success: function(data) {
