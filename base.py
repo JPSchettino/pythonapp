@@ -49,6 +49,10 @@ from matplotlib.ticker import FuncFormatter
 from sklearn.decomposition import FastICA
 from sklearn.decomposition import FactorAnalysis
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from matplotlib.lines import Line2D
+import matplotlib.cm as cm
+from adjustText import adjust_text
+from matplotlib.patches import ConnectionPatch
 
 def plot_to_base64(fig):
     img = BytesIO()

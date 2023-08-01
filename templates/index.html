@@ -138,7 +138,7 @@ h1 {
 
 
 
-            function updateFilterColumn(id) {
+    function updateFilterColumn(id) {
     const columnName = $(`#${id}`).val();
     const filterDiv = $(`#${id}Filter`);
     const filterSelect = $(`#${id}`);
@@ -243,7 +243,7 @@ function applyFilter() {
                         options += `<option value="${col}">${col}</option>`;
                     });
 
-                    $("#catVar1, #catVar2, #catVar3,#catVar4, #numVar1,#JAR1, #CATAVar1").html(options);
+                    $("#catVar1, #numVar1,#JAR1, #CATAVar1").html(options);
                 }
             });
         });
@@ -255,11 +255,15 @@ function applyFilter() {
         $('#numVar1').select2({
         placeholder: "Selecione as variáveis",
         allowClear: true
-    });
-    $('#JAR1').select2({
+        });
+        $('#catVar1').select2({
         placeholder: "Selecione as variáveis",
         allowClear: true
-    });
+        });
+        $('#JAR1').select2({
+        placeholder: "Selecione as variáveis",
+        allowClear: true
+        });
 
 
 
@@ -351,20 +355,8 @@ $("#CATAVar1").off('change').on('change', function() {
             <button type="button" class="btn btn-secondary mb-3" id="clearFiltersButton">Limpar Filtros</button>
             <!-- Filter options end -->
             <div class="mb-3">
-                <label for="catVar1" class="form-label">Variável categórica 1:</label>
-                <select class="form-select" id="catVar1" name="catVar1"></select>
-            </div>
-            <div class="mb-3">
-                <label for="catVar2" class="form-label">Variável categórica 2:</label>
-                <select class="form-select" id="catVar2" name="catVar2"></select>
-            </div>
-            <div class="mb-3">
-                <label for="catVar3" class="form-label">Variável categórica 3:</label>
-                <select class="form-select" id="catVar3" name="catVar3"></select>
-            </div>
-            <div class="mb-3">
-                <label for="catVar4" class="form-label">Variável categórica 4:</label>
-                <select class="form-select" id="catVar4" name="catVar4"></select>
+                <label for="catVar1" class="form-label">Variável categórica:</label>
+                <select multiple class="form-select" id="catVar1" name="catVar1[]"></select>
             </div>
             <div class="mb-3">
                 <label for="numVar1" class="form-label">Variável numérica:</label>

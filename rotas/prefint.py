@@ -1,4 +1,4 @@
-from base import app, session, redirect, url_for, pd, render_template, jsonify, request, base64, plt,np, os,StandardScaler, FastICA ,KernelDensity,FuncFormatter, string, PCA, FactorAnalysis, LinearDiscriminantAnalysis
+from base import app, session, redirect, url_for, pd, render_template, jsonify, request, base64, plt,np, os,StandardScaler, FastICA ,KernelDensity,FuncFormatter, string, PCA, FactorAnalysis, LinearDiscriminantAnalysis, Line2D, cm, adjust_text,ConnectionPatch
 from rotas.filemanager import *
 from rotas.estrutura import *
 
@@ -12,13 +12,32 @@ def prefint():
         selected_variables = request.get_json(force=True)
         
         print(selected_variables)
+
+
         dataframe = pd.read_json(session['filtered_dataframe'])
         num_vars = session.get('num_vars', [])
         cat_1 = selected_variables['variable1']
         cat_2 = selected_variables['variable2']
+        paleta = selected_variables['cor']
+        
         showProducts = selected_variables.get('showProducts', False)
         showHedonic = selected_variables.get('showHedonic', False)
         red =  selected_variables['variable3']
+
+        # Verifica se cat_1 ou cat_2 são variáveis numéricas
+        if cat_1 in num_vars:
+            cat_1_new_name = "_" + cat_1
+            dataframe[cat_1_new_name] = dataframe[cat_1]
+            cat_1 = cat_1_new_name
+
+        if cat_2 in num_vars:
+            cat_2_new_name = "_" + cat_2
+            dataframe[cat_2_new_name] = dataframe[cat_2]
+            cat_2 = cat_2_new_name
+
+        # Filtra o dataframe para incluir apenas as colunas relevantes
+        dataframe = dataframe[num_vars + [cat_1] + [cat_2]]
+
 
         # Filter the dataframe to include only the 'cata_vars' columns
         dataframe = dataframe[num_vars + [cat_1]+ [cat_2]]
@@ -57,7 +76,7 @@ def prefint():
 
         print(dataframe[num_vars])
 
-        def plot_map(plot_type, category=None, data=dataframe, show_products=showProducts, show_hedonic=showHedonic, produto = cat_1, use_ica = red == "ICA", use_fa=red == "FA", use_lda=red == "LDA",hedonic_features =num_vars):
+        def plot_map(plot_type, category=None, data=dataframe, show_products=showProducts, show_hedonic=showHedonic, produto = cat_1, use_ica = red == "ICA", use_fa=red == "FA", use_lda=red == "LDA",hedonic_features =num_vars, paleta = paleta):
             df = pd.DataFrame(data)
 
             scaler = StandardScaler()
@@ -72,7 +91,15 @@ def prefint():
                 lda = LinearDiscriminantAnalysis(n_components=2)
                 result = lda.fit_transform(df_normalized, df[category])
                 coordenadas = pd.DataFrame(result, columns=['LD1', 'LD2'], index=df_normalized.index)
-                loadings = pd.DataFrame(lda.coef_, columns=df_normalized.columns, index=['LD1', 'LD2']).T
+                # Obter o número de classes
+                num_classes = len(np.unique(df[category]))
+
+                # Criar índices para cada classe
+                indices = ['LD' + str(i+1) for i in range(num_classes)]
+
+                # Criar DataFrame
+                loadings = pd.DataFrame(lda.coef_, columns=df_normalized.columns, index=indices).T
+
             elif use_fa:
                 fa = FactorAnalysis(n_components=2, random_state=42)
                 result = fa.fit_transform(df_normalized)
@@ -84,12 +111,16 @@ def prefint():
                 result = pca.fit_transform(df_normalized)
                 coordenadas = pd.DataFrame(result, columns=['PC1', 'PC2'], index=df_normalized.index)
                 loadings = pd.DataFrame(pca.components_.T, columns=['PC1', 'PC2'], index=df_normalized.select_dtypes(include=[np.number]).columns)
-
+            
+            fig, ax = plt.subplots(figsize=(36,36))
             if plot_type == 'scatter' and category:
                 unique_categories = df[category].unique()
-                cmap = plt.get_cmap('viridis', len(unique_categories))
+                cmap = plt.get_cmap(paleta, len(unique_categories))
                 color_dict = {cat: cmap(i) for i, cat in enumerate(unique_categories)}
                 df['color'] = df[category].map(color_dict)
+                for cat, color in color_dict.items():
+                    ax.scatter([], [], color=color, label=cat)
+            
 
             n = result.shape[0]
             h = n**(-1/6)
@@ -97,30 +128,31 @@ def prefint():
             kde.fit(result)
             x_lim = max(abs(result[:, 0].min()), result[:, 0].max())
             y_lim = max(abs(result[:, 1].min()), result[:, 1].max())
-
-            x = np.linspace(-x_lim, x_lim, 100)
-            y = np.linspace(-y_lim, y_lim, 100)
+            xy_max = max(x_lim,y_lim)
+            x = np.linspace(-xy_max, xy_max, 100)
+            y = np.linspace(-xy_max, xy_max, 100)
             X, Y = np.meshgrid(x, y)
             xy = np.vstack([X.ravel(), Y.ravel()]).T
             Z = np.exp(kde.score_samples(xy)).reshape(X.shape)
             Z_percentage = 100 * Z
             
 
-            fig, ax = plt.subplots(figsize=(18,18))
+            
             if plot_type == 'scatter':
                 scatter = ax.scatter(
                     coordenadas['IC1'] if use_ica else coordenadas['FA1'] if use_fa else coordenadas['LD1'] if use_lda else coordenadas['PC1'],
                     coordenadas['IC2'] if use_ica else coordenadas['FA2'] if use_fa else coordenadas['LD2'] if use_lda else coordenadas['PC2'],
                     c=df['color'], s=500, alpha=0.7, edgecolors='w', linewidths=2
                 )
-                handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=v, markersize=10) for v in color_dict.values()]
-                ax.legend(handles, color_dict.keys(), title=category)
+                color_legend_handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=v, markersize=10) for v in color_dict.values()]
+                legend1 = ax.legend(handles=color_legend_handles, labels=color_dict.keys(), loc='upper left', title=category)
+                ax.add_artist(legend1)
                 circle = plt.Circle((0,0), 3, color='blue', fill=False)
                 ax.set_aspect('equal')
                 ax.add_artist(circle)
             elif plot_type == 'kde':
-                n_levels = 25
-                c = ax.contourf(X, Y, Z_percentage, levels=n_levels, cmap='viridis', alpha=0.5)
+                n_levels = 15
+                c = ax.contourf(X, Y, Z_percentage, levels=n_levels, cmap=paleta, alpha=0.5)
                 cbar = fig.colorbar(c)
                 
                 def to_percent(y, position):
@@ -132,19 +164,76 @@ def prefint():
 
                 cbar.set_label('Densidade (%)', fontsize=14)
 
+            # Criar uma lista para conter os elementos da legenda
+            legend_elements = []
+
+            # Obtenha o número de produtos únicos
+            unique_products = df[produto].unique()
+            n_products = len(unique_products)
+
+            # Crie uma paleta de cores usando "viridis"
+            colors = cm.get_cmap(paleta, n_products)
+
+            # Construa o color_dict associando cada produto a uma cor
+            color_dict = {}
+            for i, product in enumerate(unique_products):
+                color_dict[product] = colors(i / (n_products - 1))
+
+            # Restante do código, agora usando color_dict
             if show_products:
-                for i, product in enumerate(df[produto].unique()):
-                    ax.text(coordenadas.loc[df[produto] == product, 'IC1' if use_ica else 'PC1' if not use_fa and not use_lda else 'FA1' if use_fa else 'LD1'].mean(), 
-                    coordenadas.loc[df[produto] == product, 'IC2' if use_ica else 'PC2' if not use_fa and not use_lda else 'FA2' if use_fa else 'LD2'].mean(), 
-                    product, fontsize=12, ha='center')
+                product_symbols = [ 's', 'v', '^', '<', '>']
+
+                # Crie a legenda usando color_dict
+                product_legend_handles = []
+                for i, product in enumerate(unique_products):
+                    product_color = color_dict[product]
+                    handle = Line2D([0], [0], marker=product_symbols[i % len(product_symbols)], color='w', markerfacecolor=product_color, markersize=10, label=product)
+                    product_legend_handles.append(handle)
+
+                legend_products = ax.legend(handles=product_legend_handles, loc='upper right', title=produto)
+                ax.add_artist(legend_products)
+
+                for i, product in enumerate(unique_products):
+                    x_mean = coordenadas.loc[df[produto] == product, 'IC1' if use_ica else 'PC1' if not use_fa and not use_lda else 'FA1' if use_fa else 'LD1'].mean()
+                    y_mean = coordenadas.loc[df[produto] == product, 'IC2' if use_ica else 'PC2' if not use_fa and not use_lda else 'FA2' if use_fa else 'LD2'].mean()
+                    ax.scatter(x_mean, y_mean, marker=product_symbols[i % len(product_symbols)], label=product, s=1200, color=color_dict[product])
+
+            positions = []  # Armazenar as posições das setas
 
             if show_hedonic:
-                for i, feature in enumerate(df.select_dtypes(include=[np.number]).columns):
-                    ax.arrow(0, 0, loadings.loc[feature, 'IC1']*3 if use_ica else loadings.loc[feature, 'FA1']*3 if use_fa else loadings.loc[feature, 'LD1']*3 if use_lda else loadings.loc[feature, 'PC1']*3, 
-                    loadings.loc[feature, 'IC2']*3 if use_ica else loadings.loc[feature, 'FA2']*3 if use_fa else loadings.loc[feature, 'LD2']*3 if use_lda else loadings.loc[feature, 'PC2']*3, color='r', head_width=0.1, head_length=0.1)
-                    ax.text(loadings.loc[feature, 'IC1']*3 + 0.2 if use_ica else loadings.loc[feature, 'FA1']*3 + 0.2 if use_fa else loadings.loc[feature, 'LD1']*3 + 0.2 if use_lda else loadings.loc[feature, 'PC1']*3 + 0.2, 
-                    loadings.loc[feature, 'IC2']*3 + 0.2 if use_ica else loadings.loc[feature, 'FA2']*3 + 0.2 if use_fa else loadings.loc[feature, 'LD2']*3 + 0.2 if use_lda else loadings.loc[feature, 'PC2']*3 + 0.2, feature, color='r', ha='center', va='center')
+                np.random.seed(42)
+                texts = []  # Para armazenar os objetos de texto para ajuste
 
+                for i, feature in enumerate(df.select_dtypes(include=[np.number]).columns):
+                    modified_feature_name = feature.split('_')[-1]
+                    modified_feature_name = modified_feature_name.capitalize()
+
+                    x_value = loadings.loc[feature, 'IC1']*3 if use_ica else loadings.loc[feature, 'FA1']*3 if use_fa else loadings.loc[feature, 'LD1']*3 if use_lda else loadings.loc[feature, 'PC1']*3
+                    y_value = loadings.loc[feature, 'IC2']*3 if use_ica else loadings.loc[feature, 'FA2']*3 if use_fa else loadings.loc[feature, 'LD2']*3 if use_lda else loadings.loc[feature, 'PC2']*3
+                    random_factor = np.random.uniform(0.3, 0.7)
+                    x_random = x_value * random_factor
+                    y_random = y_value * random_factor
+                    rand = np.random.uniform(-0.3, 0.3)
+
+                    positions.append((x_random, y_random))
+                    #positions.append((x_value/2, y_value/2))  # Adicionar posição da seta à lista
+
+                    ax.arrow(0, 0, x_value, y_value, color='black', head_width=0.1, head_length=0.1)
+
+                    text = ax.text(x_value + rand, y_value + rand, modified_feature_name, color='black', ha='center', va='center', fontsize=15, bbox=dict(boxstyle="round,pad=0.3", edgecolor='black', facecolor='aliceblue', alpha=0.6))
+                    texts.append(text)
+
+                # Ajustar a posição dos textos para evitar sobreposição
+                adjust_text(texts)
+
+                # Conectar os textos com suas respectivas setas
+            for i, text in enumerate(texts):
+                x_text, y_text = text.get_position()
+                x_mid, y_mid = positions[i]
+                con = ConnectionPatch(xyA=(x_text, y_text), xyB=(x_mid, y_mid), coordsA="data", coordsB="data", axesA=ax, axesB=ax, color="black", linewidth=1.2)
+                ax.add_artist(con)
+
+                    
             ax.set_xlim(-x_lim, x_lim)
             ax.set_ylim(-y_lim, y_lim)
 
@@ -159,7 +248,6 @@ def prefint():
             # Save figure
             fig.savefig('temp_plot.png',transparent=True,bbox_inches='tight')
 
-
             # Open the image file in binary mode, convert it to base64 and decode it to unicode
             with open('temp_plot.png', 'rb') as f:
                 image = base64.b64encode(f.read()).decode()
@@ -172,8 +260,8 @@ def prefint():
             return image
 
         # Render the images
-        fig1 = plot_map('scatter', cat_2, dataframe, produto=cat_1)
-        fig2 = plot_map('kde', None, dataframe, produto = cat_1)
+        fig1 = plot_map('scatter', cat_2, dataframe, produto= cat_1)
+        fig2 = plot_map('kde', cat_2, dataframe, produto = cat_1)
 
         # Save the images to BytesIO objects
       

@@ -10,7 +10,7 @@ def central():
     if request.method == 'POST':
         
         # Salva cat_vars e num_vars na sessão
-        session['cat_vars'] = [request.form.get(f'catVar{i}') for i in range(1, 5) if request.form.get(f'catVar{i}')]
+        session['cat_vars'] = request.form.getlist('catVar1[]')
         session['num_vars'] = request.form.getlist('numVar1[]')
         session['cata_vars'] = request.form.getlist('CATAVar1[]')
         session['jar_vars'] = request.form.getlist('JAR1[]')
