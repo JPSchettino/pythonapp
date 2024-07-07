@@ -126,8 +126,8 @@ def prefint():
             h = n**(-1/6)
             kde = KernelDensity(bandwidth=h, kernel='gaussian')
             kde.fit(result)
-            x_lim = max(abs(result[:, 0].min()), result[:, 0].max())
-            y_lim = max(abs(result[:, 1].min()), result[:, 1].max())
+            x_lim = max(-3, 3)
+            y_lim = max(-3, 3)
             xy_max = max(x_lim,y_lim)
             x = np.linspace(-xy_max, xy_max, 100)
             y = np.linspace(-xy_max, xy_max, 100)
@@ -145,7 +145,8 @@ def prefint():
                     c=df['color'], s=500, alpha=0.7, edgecolors='w', linewidths=2
                 )
                 color_legend_handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=v, markersize=10) for v in color_dict.values()]
-                legend1 = ax.legend(handles=color_legend_handles, labels=color_dict.keys(), loc='upper left', title=category)
+                legend1 = ax.legend(handles=color_legend_handles, labels=color_dict.keys(), loc='upper left', title=category, fontsize=20)
+                legend1.get_title().set_fontsize(20)  
                 ax.add_artist(legend1)
                 circle = plt.Circle((0,0), 3, color='blue', fill=False)
                 ax.set_aspect('equal')
@@ -162,7 +163,9 @@ def prefint():
 
                 cbar.ax.yaxis.set_major_formatter(formatter)
 
-                cbar.set_label('Densidade (%)', fontsize=14)
+                cbar.set_label('Densidade (%)', fontsize=30)
+                
+                cbar.ax.tick_params(labelsize=30)
 
             # Criar uma lista para conter os elementos da legenda
             legend_elements = []
@@ -190,7 +193,8 @@ def prefint():
                     handle = Line2D([0], [0], marker=product_symbols[i % len(product_symbols)], color='w', markerfacecolor=product_color, markersize=10, label=product)
                     product_legend_handles.append(handle)
 
-                legend_products = ax.legend(handles=product_legend_handles, loc='upper right', title=produto)
+                legend_products = ax.legend(handles=product_legend_handles, loc='upper right', title=produto, fontsize=30)
+                legend_products.get_title().set_fontsize(30)  
                 ax.add_artist(legend_products)
 
                 for i, product in enumerate(unique_products):
@@ -210,28 +214,28 @@ def prefint():
 
                     x_value = loadings.loc[feature, 'IC1']*3 if use_ica else loadings.loc[feature, 'FA1']*3 if use_fa else loadings.loc[feature, 'LD1']*3 if use_lda else loadings.loc[feature, 'PC1']*3
                     y_value = loadings.loc[feature, 'IC2']*3 if use_ica else loadings.loc[feature, 'FA2']*3 if use_fa else loadings.loc[feature, 'LD2']*3 if use_lda else loadings.loc[feature, 'PC2']*3
-                    random_factor = np.random.uniform(0.3, 0.7)
+                    random_factor = np.random.uniform(0.7, 0.9)
                     x_random = x_value * random_factor
                     y_random = y_value * random_factor
-                    rand = np.random.uniform(-0.3, 0.3)
+                    rand = np.random.uniform(-0.2, 0.2)
 
                     positions.append((x_random, y_random))
                     #positions.append((x_value/2, y_value/2))  # Adicionar posição da seta à lista
 
                     ax.arrow(0, 0, x_value, y_value, color='black', head_width=0.1, head_length=0.1)
 
-                    text = ax.text(x_value + rand, y_value + rand, modified_feature_name, color='black', ha='center', va='center', fontsize=15, bbox=dict(boxstyle="round,pad=0.3", edgecolor='black', facecolor='aliceblue', alpha=0.6))
+                    text = ax.text(x_value + rand, y_value + rand, modified_feature_name, color='black', ha='center', va='center', fontsize=20, bbox=dict(boxstyle="round,pad=0.3", edgecolor='black', facecolor='aliceblue', alpha=0.9))
                     texts.append(text)
 
                 # Ajustar a posição dos textos para evitar sobreposição
                 adjust_text(texts)
 
                 # Conectar os textos com suas respectivas setas
-            for i, text in enumerate(texts):
-                x_text, y_text = text.get_position()
-                x_mid, y_mid = positions[i]
-                con = ConnectionPatch(xyA=(x_text, y_text), xyB=(x_mid, y_mid), coordsA="data", coordsB="data", axesA=ax, axesB=ax, color="black", linewidth=1.2)
-                ax.add_artist(con)
+                for i, text in enumerate(texts):
+                    x_text, y_text = text.get_position()
+                    x_mid, y_mid = positions[i]
+                    con = ConnectionPatch(xyA=(x_text, y_text), xyB=(x_mid, y_mid), coordsA="data", coordsB="data", axesA=ax, axesB=ax, color="grey", linewidth=1.2)
+                    ax.add_artist(con)
 
                     
             ax.set_xlim(-x_lim, x_lim)
@@ -239,7 +243,7 @@ def prefint():
 
             ax.set_xlabel('FA1' if use_fa else 'IC1' if use_ica else 'LD1' if use_lda else 'PC1 - {0:.1f}%'.format(pca.explained_variance_ratio_[0]*100), fontsize=14)
             ax.set_ylabel('FA2' if use_fa else 'IC2' if use_ica else 'LD2' if use_lda else 'PC2 - {0:.1f}%'.format(pca.explained_variance_ratio_[1]*100), fontsize=14)
-            ax.set_title('Mapa de Preferência Interna', fontsize=20)
+            ax.set_title('Análise de sentimentos', fontsize=40)
 
             ax.grid(True)
             plt.xticks([])

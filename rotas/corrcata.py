@@ -20,7 +20,8 @@ def CORRCATA():
     plt.rcParams['figure.figsize'] = [96, 96]
 
     # Generate the clustermap
-    g = sns.clustermap(corr_matrix.fillna(0), annot=True, fmt='.1f', cmap="RdGy", linewidths=.01, annot_kws={"size":8})
+    g = sns.clustermap(corr_matrix.fillna(0), annot=True, fmt='.1f', cmap="RdGy", 
+                       linewidths=.01, annot_kws={"size":8}, row_cluster=True, col_cluster=True,tree_kws=None)
 
     # Save figure
     g.fig.savefig('temp_plot.png', transparent=True)

@@ -101,15 +101,15 @@ def jar():
                         # Mostrar a porcentagem se for maior que 5%
                         if prop >= 0.05:
                             percentage = f"{prop * 100:.0f}%"
-                            ax.text(left - prop / 2, 0, percentage, ha="center", va="center", fontsize=8.8+prop*10, fontweight='bold',color = corrotulo)
+                            ax.text(left - prop / 2, 0, percentage, ha="center", va="center", fontsize=9.1+prop*10, fontweight='bold',color = corrotulo)
 
                         if i == 0 and j == len(jar_columns) // 2:
-                            ax.annotate(product_name, xy=(0.5, 1.8), xycoords='axes fraction', ha='center', fontsize=15, fontweight='bold', color=cortitulo)
+                            ax.annotate(product_name, xy=(0.5, 1.8), xycoords='axes fraction', ha='center', fontsize=17, fontweight='bold', color=cortitulo)
 
                     # Remover o que está antes do "_" e o próprio "_"
                     short_title = jar_column.split("_", 1)[-1]
                     #subtitle = ax.set_title(f"{short_title} - {age_group} - {product_name}", fontsize=10)
-                    ax.annotate(f"{short_title} - {age_group}", xy=(0.5, 1.2), xycoords='axes fraction', ha='center', fontsize=11, va='center', fontweight='bold',color = corsubtitulo)
+                    ax.annotate(f"{short_title} - {age_group}", xy=(0.5, 1.2), xycoords='axes fraction', ha='center', fontsize=15, va='center', fontweight='bold',color = corsubtitulo)
                     ax.set_xlim(0, 1)
                     ax.set_yticks([])
                     ax.set_xticks([])
