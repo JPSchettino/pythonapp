@@ -49,7 +49,13 @@ Siga as instruções abaixo para clonar e executar o projeto em sua máquina loc
 
 
 
-1. **Clone o repositório**
+3. **Instale as dependências**
    ```sh
-   git clone https://github.com/JPSchettino/pythonapp.git
-   cd pythonapp
+   pip install -r requirements.txt
+
+
+4. **Rode o app**
+   ```sh
+   python app.py
+
+
