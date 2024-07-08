@@ -1,0 +1,14 @@
+Flask
+Flask-Session
+scipy
+werkzeug
+pandas
+numpy
+matplotlib
+seaborn
+plotly
+beautifulsoup4
+scikit-learn
+Pillow
+adjustText
+statsmodels
