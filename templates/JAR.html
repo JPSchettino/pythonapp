@@ -159,6 +159,11 @@
             $.get("/get_variables", function(data) {
                 $('#variableDropdown1').empty();
                 $('#variableDropdown2').empty();
+                
+                // Adiciona a opção "Nenhum"
+                $('#variableDropdown1').append('<option value="">Nenhum</option>');
+                $('#variableDropdown2').append('<option value="">Nenhum</option>');
+
                 for(var i=0; i<data.length; i++) {
                     if (data[i] !== selectedVariable2) {
                         $('#variableDropdown1').append('<option value="' + data[i] + '">' + data[i] + '</option>');
@@ -174,8 +179,8 @@
     
         $(document).ready(function() {
             $.get("/get_variables", function(data) {
-                if (data.length > 1) {
-                    updateDropdowns(data[0], data[1]);
+                if (data.length > 0) {
+                    updateDropdowns("", ""); // Começa com a opção "Nenhum" selecionada
                 }
             });
     
@@ -245,4 +250,5 @@
 </script>
 </body>
 </html>
+
 

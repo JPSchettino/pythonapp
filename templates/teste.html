@@ -4,14 +4,13 @@
     <meta charset="UTF-8">
     <title>Teste de Dados</title>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
-    <script lang="javascript" src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
     <style>
         .logo {
             position: absolute;
-            bottom: 1px;
+            top: 10px;
             left: 10px;
-            width: 400px; /* ajuste o valor de acordo com o tamanho desejado */
+            width: 250px; /* ajuste o valor de acordo com o tamanho desejado */
             height: auto; /* para manter a proporção da imagem */
         }
         body {
@@ -30,7 +29,6 @@
             text-align: center;
             max-width: 200%;
             margin-bottom: 20px;
-        
         }
         h1, h2 {
             font-size: 3em;
@@ -79,64 +77,76 @@
             color: white;
             text-decoration: none;
         }
-
     </style>
 </head> 
 <body>
     <header>
-        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+        <img class="logo" src="static/logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
     </header>
     <div class="container">
-        <h1>Teste de Médias(filtrados por {{ filters_string }})</h1>
+        <h1>Teste de Médias (filtrados por {{ filters_string }})</h1>
         
         <h2>Resultados de Normalidade</h2>
-        <table id="table1" class="results">
+        <div>
             <button onclick="copyTableToClipboard('table1')">Copiar Tabela</button>
             <button onclick="exportTableToExcel('table1')">Exportar Tabela (Excel)</button>
+        </div>
+        <table id="table1" class="results">
             {{ results_normality_html | safe }}
         </table>
+        <p>A tabela acima apresenta os resultados dos testes de normalidade. Um teste de normalidade é usado para determinar se um conjunto de dados segue uma distribuição normal. Se o valor-p for menor que 0,05, rejeitamos a hipótese nula de normalidade, indicando que os dados não são normalmente distribuídos.</p>
         
         <h2>Resultados de Testes</h2>
-        <table id="table2" class="results">
+        <div>
             <button onclick="copyTableToClipboard('table2')">Copiar Tabela</button>
             <button onclick="exportTableToExcel('table2')">Exportar Tabela (Excel)</button>
+        </div>
+        <table id="table2" class="results">
             {{ results_tests_html | safe }}
         </table>
+        <p>A tabela acima mostra os resultados dos testes estatísticos realizados. As células em vermelho indicam que o valor-p é menor que 0,05, o que significa que a diferença é estatisticamente significativa. Células sem cor indicam que a diferença não é significativa.</p>
 
         <h2>Resultados Descritivos</h2>
-        <table id="table3" class="results">
+        <div>
             <button onclick="copyTableToClipboard('table3')">Copiar Tabela</button>
             <button onclick="exportTableToExcel('table3')">Exportar Tabela (Excel)</button>
+        </div>
+        <table id="table3" class="results">
             {{ results_descriptive_html | safe }}
         </table>
+        <p>A tabela acima fornece uma análise descritiva dos dados. As categorias em azul indicam que a diferença é significativa, mostrando que há uma diferença estatisticamente relevante entre os grupos analisados.</p>
 
         <div id="qq_plots" class="qq_plots">
-            <h2>Gráficos Q-Q(filtrados por {{ filters_string }})</h2>
+            <h2>Gráficos Q-Q (filtrados por {{ filters_string }})</h2>
             {% for plot_encoded in qqplots_encoded %}
                 <img src="data:image/png;base64,{{ plot_encoded }}" alt="Gráfico Q-Q">
             {% endfor %}
         </div>
+        <p>Os gráficos Q-Q (Quantil-Quantil) são usados para verificar a normalidade dos dados. Eles comparam os quantis de uma distribuição amostral com os quantis de uma distribuição teórica (normal). Se os pontos do gráfico estiverem próximos da linha diagonal, isso indica que os dados seguem uma distribuição normal.</p>
         
-        <div id = "residual_plots" class="residual_plots">
-            <h2>Gráficos de Resíduos Qui-Quadrados Padronizados(filtrados por {{ filters_string }})</h2>
+        <div id="residual_plots" class="residual_plots">
+            <h2>Gráficos de Resíduos Qui-Quadrados Padronizados (filtrados por {{ filters_string }})</h2>
             {% for plot_encoded in residualplots_encoded %}
                 <img src="data:image/png;base64,{{ plot_encoded }}" alt="Gráfico de Resíduos Qui-Quadrados Padronizados">
             {% endfor %}
         </div>
+        <p>Os gráficos de resíduos qui-quadrados padronizados são utilizados para avaliar a qualidade do ajuste de um modelo estatístico. Eles mostram a diferença entre os valores observados e os valores esperados padronizados. Grandes desvios indicam que o modelo pode não estar ajustando bem os dados.</p>
     </div>
     <div class="sidebar sidebar-hidden" id="sidebar">
         <ul>
-                <li><a href="#table1">Resultados de Normalidade</a></li>
-                <li><a href="#table2">Resultados de Testes</a></li>
-                <li><a href="#table3">Resultados Descritivos</a></li>
-                <li><a href="#qq_plots">qq_plots</a></li>
-                <li><a href="#residual_plots">residual_plots</a></li>
-       </ul>
-    </div>
+            <li><a href="#table1">Resultados de Normalidade</a></li>
+            <li><a href="#table2">Resultados de Testes</a></li>
+            <li><a href="#table3">Resultados Descritivos</a></li>
+            <li><a href="#qq_plots">Gráficos Q-Q</a></li>
+            <li><a href="#residual_plots">Gráficos de Resíduos</a></li>
+        </ul>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script lang="javascript" src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <script>
+        console.log(XLSX);
+
         const sidebar = document.getElementById('sidebar');
 
         // Evento de passagem do mouse
@@ -157,39 +167,73 @@
         });
 
         $(document).ready(function() {
-            $('.results').DataTable();
+            $('#table1, #table2, #table3').each(function() {
+                $(this).DataTable();
+            });
         });
 
-        async function copyTableToClipboard(tableID) {
-            var tableText = '';
-            var rows = document.querySelectorAll('#' + tableID + ' tr');
-
-            for (var i = 0; i < rows.length; i++) {
-                var rowText = '';
-                var cols = rows[i].querySelectorAll('td, th');
-
-                for (var j = 0; j < cols.length; j++) 
-                    rowText += cols[j].innerText + '\t';
-                
-                tableText += rowText.trim() + '\n'; 
+        function copyTableToClipboard(tableID) {
+                var table = document.getElementById(tableID);
+                var range, sel;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(table.innerText).then(() => {
+                        alert("Tabela copiada para a área de transferência");
+                    }).catch(err => {
+                        alert("Falha ao copiar a tabela: ", err);
+                    });
+                } else {
+                    // Fallback para navegadores antigos
+                    if (document.createRange && window.getSelection) {
+                        range = document.createRange();
+                        sel = window.getSelection();
+                        sel.removeAllRanges();
+                        try {
+                            range.selectNodeContents(table);
+                            sel.addRange(range);
+                        } catch (e) {
+                            range.selectNode(table);
+                            sel.addRange(range);
+                        }
+                        document.execCommand("copy");
+                        sel.removeAllRanges();
+                        alert("Tabela copiada para a área de transferência");
+                    } else if (document.body.createTextRange) {
+                        range = document.body.createTextRange();
+                        range.moveToElementText(table);
+                        range.select();
+                        range.execCommand("Copy");
+                        alert("Tabela copiada para a área de transferência");
+                    }
+                }
             }
 
-            try {
-                await navigator.clipboard.writeText(tableText.trim());
-                console.log('Table copied to clipboard');
-            } catch (err) {
-                console.error('Failed to copy table: ', err);
-            }
-        }
 
-        function exportTableToExcel(tableId) {
-    var wb = XLSX.utils.book_new();
-    var ws = XLSX.utils.table_to_sheet(document.querySelector('#' + tableId));
-    XLSX.utils.book_append_sheet(wb, ws, "Resumo");
-    XLSX.writeFile(wb, tableId + ".xlsx");
-}
+        function exportTableToExcel(tableID) {
+                var table = document.getElementById(tableID);
+                if (!table) {
+                    alert("Tabela não encontrada!");
+                    return;
+                }
+
+                // Verifica se a biblioteca XLSX está disponível
+                if (typeof XLSX === 'undefined') {
+                    alert("Biblioteca XLSX não carregada!");
+                    return;
+                }
+
+                try {
+                    var wb = XLSX.utils.book_new();
+                    var ws = XLSX.utils.table_to_sheet(table);
+                    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+                    XLSX.writeFile(wb, tableID + ".xlsx");
+                    alert("Arquivo Excel gerado com sucesso!");
+                } catch (error) {
+                    alert("Erro ao gerar o arquivo Excel: " + error.message);
+                }
+            }
 
     </script>
 </body>
 </html>
+
 
