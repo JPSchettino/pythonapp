@@ -7,16 +7,16 @@ def jar():
     if 'dataframe' not in session:
         return redirect(url_for('index'))
     if request.method == 'POST':
-
-        selected_variables = request.json
-        cat_1 = selected_variables[0]
-        cat_2 = selected_variables[1]
+        data = request.json
+        cat_1 = data['selectedVariable1']
+        cat_2 = data['selectedVariable2']
+        selected_categories = data['selectedCategories']
         df = pd.read_json(session['filtered_dataframe'])
         jar_columns = session.get('jar_vars', [])
-        categories_order_colors = selected_variables[2]
-        cortitulo = selected_variables[3]
-        corsubtitulo = selected_variables[4]
-        corrotulo = selected_variables[5]
+        categories_order_colors = data['colors']
+        cortitulo = data['colorTitulo']
+        corsubtitulo = data['colorSubtitulo']
+        corrotulo = data['colorRotulo']
 
         numeric_to_category = {
             1: "muito abaixo do ideal",
@@ -33,17 +33,19 @@ def jar():
             "muito acima do ideal": "Muito acima do ideal"
         }
 
-        if cat_1 == "Nenhum" or cat_1 == "":
+        if cat_1 == "Nenhum" or not cat_1:
             product_names = [""]
         else:
             product_names = df[cat_1].unique() if cat_1 in df.columns else [""]
+            if selected_categories:
+                df = df[df[cat_1].isin(selected_categories)]
+                product_names = [name for name in product_names if name in selected_categories]
 
-        if cat_2 == "Nenhum" or cat_2 == "":
+        if cat_2 == "Nenhum" or not cat_2:
             age_groups = [""]
         else:
             age_groups = df[cat_2].unique() if cat_2 in df.columns else [""]
 
-        # Considerar apenas colunas válidas
         columns_to_consider = [c for c in [cat_1, cat_2] if c != "Nenhum" and c in df.columns]
         df = df[columns_to_consider + jar_columns]
 
@@ -53,16 +55,10 @@ def jar():
         fig, axes = plt.subplots(num_products * (num_age_groups + 1), len(jar_columns), figsize=(38, 38 * num_products))
 
         for p, product_name in enumerate(product_names):
-            if product_name == "":
-                filtered_df = df
-            else:
-                filtered_df = df[df[cat_1] == product_name]
+            filtered_df = df if product_name == "" else df[df[cat_1] == product_name]
 
             for i, age_group in enumerate(age_groups):
-                if age_group == "":
-                    age_df = filtered_df
-                else:
-                    age_df = filtered_df[filtered_df[cat_2] == age_group]
+                age_df = filtered_df if age_group == "" else filtered_df[filtered_df[cat_2] == age_group]
 
                 for j, jar_column in enumerate(jar_columns):
                     if pd.api.types.is_numeric_dtype(age_df[jar_column]):
@@ -129,3 +125,13 @@ def jar():
 
     else:
         return render_template('JAR.html')
+
+@app.route('/get_categories', methods=['GET'])
+def get_categories():
+    variable = request.args.get('variable')
+    df = pd.read_json(session['filtered_dataframe'])
+    if variable and variable in df.columns:
+        categories = df[variable].dropna().unique().tolist()
+        return jsonify(categories)
+    return jsonify([])
+

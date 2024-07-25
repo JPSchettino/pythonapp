@@ -8,8 +8,8 @@
             position: absolute;
             top: 10px;
             left: 10px;
-            width: 300px; /* ajuste o valor de acordo com o tamanho desejado */
-            height: auto; /* para manter a proporção da imagem */
+            width: 300px;
+            height: auto;
         }
         body {
             font-family: 'Sora', Light;
@@ -28,13 +28,13 @@
             justify-content: center;
             gap: 40px;
             margin-top: 50px;
-            margin-bottom: 50px;
+            margin-bottom: 20px;
         }
         .chartContainer {
             text-align: center;
             max-width: 80%;
             margin-bottom: 20px;
-            margin-top: 50px;
+            margin-top: 20px;
             background: rgba(255, 255, 255, 0.1);
             padding: 10px;
             border-radius: 8px;
@@ -104,6 +104,7 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
+
         #colorPickers {
             display: flex;
             flex-direction: row;
@@ -115,11 +116,22 @@
             margin: 5px 0;
         }
 
+        .category-selector {
+            margin-top: 20px;
+            max-width: 80%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .category-checkbox-wrapper {
+            margin: 5px 15px;
+        }
     </style>
 </head>
 <body>
     <header>
-        <img class = "logo" src="static\logo_preferencial_FOODTEST1.jpg" alt="Logo da Empresa">
+        <img class="logo" src="static/logo_preferencial_FOODTEST1.jpg" alt="Logo da Empresa">
     </header>
     <h1 id="filtersHeader">Gráfico JAR</h1>
     <div class="controls">
@@ -128,8 +140,7 @@
         <button id="updateGraph">Atualizar gráfico</button>
         <button id="saveButton">Salvar como PNG</button>
     </div>
-    </div> 
-    </div>
+    <div id="categorySelector" class="category-selector"></div>
     <div id="colorPickers">
         <label for="color1">Muito abaixo do ideal:</label>
         <input type="color" id="color1" name="color1" value="#9AD8E6">
@@ -152,19 +163,14 @@
     </div>
     <div id="chartContainer">
         <img id="chartImage" src="" alt="Clustermap">
-    </div> <!-- Fecha a div do container -->
+    </div>
 
     <script>
         function updateDropdowns(selectedVariable1, selectedVariable2) {
             $.get("/get_variables", function(data) {
-                $('#variableDropdown1').empty();
-                $('#variableDropdown2').empty();
-                
-                // Adiciona a opção "Nenhum"
-                $('#variableDropdown1').append('<option value="">Nenhum</option>');
-                $('#variableDropdown2').append('<option value="">Nenhum</option>');
-
-                for(var i=0; i<data.length; i++) {
+                $('#variableDropdown1').empty().append('<option value="">Nenhum</option>');
+                $('#variableDropdown2').empty().append('<option value="">Nenhum</option>');
+                for (var i = 0; i < data.length; i++) {
                     if (data[i] !== selectedVariable2) {
                         $('#variableDropdown1').append('<option value="' + data[i] + '">' + data[i] + '</option>');
                     }
@@ -174,30 +180,48 @@
                 }
                 $('#variableDropdown1').val(selectedVariable1);
                 $('#variableDropdown2').val(selectedVariable2);
+                updateCategorySelector(selectedVariable1);
             });
         }
-    
+
+        function updateCategorySelector(variable) {
+            $('#categorySelector').empty();
+            if (variable && variable !== "Nenhum") {
+                $.get("/get_categories", { variable: variable }, function(data) {
+                    data.forEach(function(category) {
+                        $('#categorySelector').append(
+                            '<div class="category-checkbox-wrapper"><input type="checkbox" class="category-checkbox" value="' + category + '"> ' + category + '</div>'
+                        );
+                    });
+                });
+            }
+        }
+
         $(document).ready(function() {
             $.get("/get_variables", function(data) {
-                if (data.length > 0) {
-                    updateDropdowns("", ""); // Começa com a opção "Nenhum" selecionada
+                if (data.length > 1) {
+                    updateDropdowns(data[0], data[1]);
                 }
             });
-    
+
             $('#variableDropdown1').change(function() {
                 var selectedVariable1 = $(this).val();
                 var selectedVariable2 = $('#variableDropdown2').val();
                 updateDropdowns(selectedVariable1, selectedVariable2);
             });
-    
+
             $('#variableDropdown2').change(function() {
                 var selectedVariable1 = $('#variableDropdown1').val();
                 var selectedVariable2 = $(this).val();
                 updateDropdowns(selectedVariable1, selectedVariable2);
             });
+
             $('#updateGraph').click(function() {
                 var selectedVariable1 = $('#variableDropdown1').val();
                 var selectedVariable2 = $('#variableDropdown2').val();
+                var selectedCategories = $('.category-checkbox:checked').map(function() {
+                    return this.value;
+                }).get();
                 var colors = {
                     "muito abaixo do ideal": $('#color1').val(),
                     "abaixo do ideal": $('#color2').val(),
@@ -205,50 +229,53 @@
                     "acima do ideal": $('#color4').val(),
                     "muito acima do ideal": $('#color5').val()
                 };
-                var colorTitulo = $('#color6').val()
+                var colorTitulo = $('#color6').val();
+                var colorSubtitulo = $('#color7').val();
+                var colorRotulo = $('#color8').val();
 
-                var colorsubTitulo = $('#color7').val()
-
-                var colorRotulo = $('#color8').val()
-    
                 $.ajax({
                     url: '/JAR',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify([selectedVariable1, selectedVariable2, colors, colorTitulo,colorsubTitulo,colorRotulo]), // include the colors here
-                    dataType: 'json', 
+                    data: JSON.stringify({
+                        selectedVariable1: selectedVariable1,
+                        selectedVariable2: selectedVariable2,
+                        selectedCategories: selectedCategories,
+                        colors: colors,
+                        colorTitulo: colorTitulo,
+                        colorSubtitulo: colorSubtitulo,
+                        colorRotulo: colorRotulo
+                    }),
+                    dataType: 'json',
                     success: function(data) {
                         $('#chartImage').attr('src', 'data:image/png;base64,' + data.corrgraf);
                         $('#filtersHeader').text('Gráficos JAR (filtrados por ' + data.filters_string + ')');
-                        updateDropdowns(selectedVariable1, selectedVariable2); // Note the corrected call here
+                        updateDropdowns(selectedVariable1, selectedVariable2);
                     }
                 });
             });
-    
         });
 
-    document.getElementById("saveButton").addEventListener("click", function(){
-    var imgElement = document.getElementById('chartImage');
-    
-    var selectedVariable1 = $('#variableDropdown1').val();
-    var selectedVariable2 = $('#variableDropdown2').val();
+        document.getElementById("saveButton").addEventListener("click", function() {
+            var imgElement = document.getElementById('chartImage');
 
-    var filters_string = $('#filtersHeader').text().split(' ')[3]; // We assume that the filters string is the fourth word of the '#filtersHeader' text
+            var selectedVariable1 = $('#variableDropdown1').val();
+            var selectedVariable2 = $('#variableDropdown2').val();
 
-    var filename = 'JARPLOT_' + filters_string + '_' + selectedVariable1 + '_' + selectedVariable2 + '.png';
+            var filters_string = $('#filtersHeader').text().split(' ')[3];
 
-    fetch(imgElement.src)
-        .then(response => response.blob())
-        .then(blob => {
-            var url = window.URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
+            var filename = 'JARPLOT_' + filters_string + '_' + selectedVariable1 + '_' + selectedVariable2 + '.png';
+
+            fetch(imgElement.src)
+                .then(response => response.blob())
+                .then(blob => {
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                });
         });
-});
-</script>
+    </script>
 </body>
 </html>
-
-
