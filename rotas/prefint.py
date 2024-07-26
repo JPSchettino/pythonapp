@@ -243,7 +243,7 @@ def prefint():
 
             ax.set_xlabel('FA1' if use_fa else 'IC1' if use_ica else 'LD1' if use_lda else 'PC1 - {0:.1f}%'.format(pca.explained_variance_ratio_[0]*100), fontsize=14)
             ax.set_ylabel('FA2' if use_fa else 'IC2' if use_ica else 'LD2' if use_lda else 'PC2 - {0:.1f}%'.format(pca.explained_variance_ratio_[1]*100), fontsize=14)
-            ax.set_title('Análise de sentimentos', fontsize=40)
+            ax.set_title('Mapa de preferência interna', fontsize=40)
 
             ax.grid(True)
             plt.xticks([])

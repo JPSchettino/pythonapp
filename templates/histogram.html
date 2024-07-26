@@ -13,8 +13,8 @@
             position: absolute;
             top: 10px;
             left: 10px;
-            width: 250px; /* ajuste o valor de acordo com o tamanho desejado */
-            height: auto; /* para manter a proporção da imagem */
+            width: 250px;
+            height: auto;
         }
         body {
             font-family: 'Sora', Light;
@@ -49,10 +49,10 @@
             overflow: auto;
             padding: 20px;
             background: rgba(0,0,0,0.7);
-            transition: all 0.5s ease;  /* Transição suave */
+            transition: all 0.5s ease;
         }
         .sidebar-hidden {
-            right: -200px;  /* Esconder a sidebar movendo-a para fora da tela */
+            right: -200px;
         }
         .sidebar ul {
             list-style-type: none;
@@ -76,12 +76,10 @@
             margin-right: 20px;
             transition: all 0.3s ease;
         }
-
         select:focus {
             box-shadow: 0px 2px 6px 1px #19B1A1;
             outline: none;
         }
-
         button {
             padding: 10px 20px;
             border: none;
@@ -92,15 +90,12 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-
         button:hover {
             background-color: #307FE2;
         }
-
         button:active {
             transform: scale(0.98);
         }
-
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
@@ -109,261 +104,264 @@
 </head>
 <body>
     <header>
-        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+        <img class="logo" src="static/logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
     </header>
     <div class="container">
         <h1>Gráficos (filtrados por {{ filters_string }})</h1>
-
-        <!-- Adicionando seleção dropdown e gráfico de boxplot -->
         <div class="graph-container">
             <h2>histogramas:</h2>
             <select id="numVarSelect"></select>
             <select id="catSelect"></select>
             <button id="saveButton">Salvar como PNG</button>
+            <button id="copyButton">Copiar gráfico</button>
             <div id="histogram"></div>
             <div id="colorPickerContainer"></div>
             <button id="updateChartButton">Atualizar gráfico</button>
-            
         </div>
-
-        <!-- O resto do seu HTML ... -->
+        <div class="explanation">
+            Este histograma exibe a distribuição de frequências relativas de dados categóricos. Cada barra representa a proporção de observações que se enquadram em uma categoria específica. A altura de cada barra é proporcional à frequência relativa, mostrando como os dados se distribuem entre as diferentes categorias. Esta visualização é útil para identificar a distribuição e a concentração de dados em categorias específicas.
+        </div>
     </div>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
- window.addEventListener('load', function() {
- console.log("boxplot.js carregado");
+        window.addEventListener('load', function() {
+            console.log("histogram.js carregado");
 
- function createhistogram(data, colorScheme) {
-    d3.select('#histogram').selectAll("svg").remove();
+            function createHistogram(data, colorScheme) {
+                d3.select('#histogram').selectAll("svg").remove();
 
-    var margin = {top: 50, right: 50, bottom: 50, left: 50},
-        width = 800 - margin.left - margin.right,
-        height = 400 - margin.top - margin.bottom;
-    
-    var total = d3.sum(data, function(d) { return d.values.count; });
+                var margin = {top: 50, right: 50, bottom: 50, left: 50},
+                    width = 800 - margin.left - margin.right,
+                    height = 400 - margin.top - margin.bottom;
+                
+                var total = d3.sum(data, function(d) { return d.values.count; });
 
-    var x = d3.scaleBand()
-        .rangeRound([0, width])
-        .padding(0.1)
-        .domain(data.map(function(d) { return d.level; }));
+                var x = d3.scaleBand()
+                    .rangeRound([0, width])
+                    .padding(0.1)
+                    .domain(data.map(function(d) { return d.level; }));
 
-    var y = d3.scaleLinear()
-        .range([height, 0])
-        .domain([0, 1]);
+                var y = d3.scaleLinear()
+                    .range([height, 0])
+                    .domain([0, 1]);
 
-    var svg = d3.select("#histogram").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-        .style("background-color", "white");
+                var svg = d3.select("#histogram").append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                    .style("background-color", "white");
 
-    // The rest of your code is unchanged until the y axis call
+                svg.append("g")
+                    .call(d3.axisLeft(y).tickFormat(d3.format(".0%")));
 
-    svg.append("g")
-        .call(d3.axisLeft(y).tickFormat(d3.format(".0%")));
+                var boxWidth = 50;
 
-    var boxWidth = 50;
+                var rect = svg.selectAll(".histogram")
+                    .data(data)
+                    .enter().append("rect")
+                    .attr("x", function(d) { return x(d.level); })
+                    .attr("y", function(d) { return y(d.values.count / total); })
+                    .attr("height", function(d) { return height - y(d.values.count / total); })
+                    .attr("width", x.bandwidth())
+                    .attr("fill", function(d, i) { return colorScheme[i]; })
+                    .attr("stroke", "black");
 
-    var rect = svg.selectAll(".histogram")
-        .data(data)
-        .enter().append("rect")
-        .attr("x", function(d) { return x(d.level); })
-        .attr("y", function(d) { return y(d.values.count / total); })
-        .attr("height", function(d) { return height - y(d.values.count / total); })
-        .attr("width", x.bandwidth())
-        .attr("fill", function(d, i) { return colorScheme[i]; })
-        .attr("stroke", "black");
+                rect.transition()
+                    .duration(800)
+                    .attr("y", function(d) { return y(d.values.count / total); })
+                    .attr("height", function(d) { return height - y(d.values.count / total); })
+                    .delay(function(d,i){return(i*100)});
 
-    rect.transition()
-        .duration(800)
-        .attr("y", function(d) { return y(d.values.count / total); })
-        .attr("height", function(d) { return height - y(d.values.count / total); })
-        .delay(function(d,i){return(i*100)})
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0 - margin.left)
+                    .attr("x", 0 - (height / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .text("");  
 
-    svg.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 0 - margin.left)
-        .attr("x", 0 - (height / 2))
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
-        .text("Porcentagem");  
+                svg.append("text")
+                    .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top) + ")")
+                    .style("text-anchor", "middle")
+                    .text("");
 
-    svg.append("text")
-        .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top) + ")")
-        .style("text-anchor", "middle")
-        .text("Level");
-
-    var meanLabels = svg.selectAll(".meanLabel")
-        .data(data)
-        .enter().append("text")
-        .attr("class", "meanLabel")
-        .attr("x", function(d) { return x(d.level) + x.bandwidth()/2; })
-        .attr("y", function(d) { return y(d.values.count / total) + 30; })
-        .text(function(d) { return (d.values.count / total * 100).toFixed(2) + "%"; }) // convert count to percentage and round to two decimal places
-        .attr("text-anchor", "middle") // centralizes the text horizontally
-        .attr("fill", "#000000") // uses the same color as the bar
-        .style("font-weight", "bold"); // makes the font bolder
-}
-
-// Função para preparar os dados
-function prepareData(data, varNumerica, categoria) {
-    // Calcular média e desvio padrão em vez de mínimo, máximo e quartis
-    var dataForVar = data[varNumerica][`barplot_${categoria}`];
-    return dataForVar;
-}
-
-// Função para gerar dados do gráfico de barras
-function generatehistogramData(preparedData, varNumerica, categoria) {
-    var histogramData = [];
-
-    for (var subcategoria in preparedData['mean']) {
-        histogramData.push({
-            level: subcategoria,
-            values: {
-                count: preparedData['count'][subcategoria]
+                var meanLabels = svg.selectAll(".meanLabel")
+                    .data(data)
+                    .enter().append("text")
+                    .attr("class", "meanLabel")
+                    .attr("x", function(d) { return x(d.level) + x.bandwidth()/2; })
+                    .attr("y", function(d) { return y(d.values.count / total) + 30; })
+                    .text(function(d) { return (d.values.count / total * 100).toFixed(2) + "%"; })
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "#000000")
+                    .style("font-weight", "bold");
             }
+
+            function prepareData(data, varNumerica, categoria) {
+                var dataForVar = data[varNumerica][`barplot_${categoria}`];
+                return dataForVar;
+            }
+
+            function generateHistogramData(preparedData, varNumerica, categoria) {
+                var histogramData = [];
+
+                for (var subcategoria in preparedData['count']) {
+                    histogramData.push({
+                        level: subcategoria,
+                        values: {
+                            count: preparedData['count'][subcategoria]
+                        }
+                    });
+                }
+
+                return histogramData;
+            }
+
+            function getNumericVariables(data) {
+                return Object.keys(data);
+            }
+
+            function getCategoricalVariables(data) {
+                var firstNumericData = data[Object.keys(data)[0]];
+                var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
+                var categories = categories.filter(onlyUnique);
+                return categories;
+            }
+
+            function onlyUnique(value, index, array) {
+                return array.indexOf(value) === index;
+            }
+
+            d3.json('/visualizacao').then(function(data) {
+                console.log(data);
+                console.log(Object.keys(data));
+
+                var dropdown = d3.select('#numVarSelect');
+                dropdown.selectAll('option')
+                    .data(getNumericVariables(data))
+                    .enter()
+                    .append('option')
+                    .attr('value', function(d) { return d; })
+                    .text(function(d) { return d; });
+
+                var catDropdown = d3.select('#catSelect');
+                catDropdown.selectAll('option')
+                    .data(getCategoricalVariables(data))
+                    .enter()
+                    .append('option')
+                    .attr('value', function(d) { return d; })
+                    .text(function(d) { return d; });
+
+                function updateHistogram() {
+                    d3.select('#histogram').selectAll("svg").remove();
+
+                    var varNumerica = dropdown.property('value');
+                    var categoria = catDropdown.property('value');
+
+                    var preparedData = prepareData(data, varNumerica, categoria);
+                    var histogramData = generateHistogramData(preparedData, varNumerica, categoria);
+                    updateData(histogramData);
+                    createHistogram(histogramData);
+                }
+
+                dropdown.on('change', updateHistogram);
+                catDropdown.on('change', updateHistogram);
+
+                updateHistogram();
+            }).catch(function(error){
+                console.log(error);
+            });
+
+            function updateData(newData) {
+              data = newData;
+
+              document.getElementById('colorPickerContainer').innerHTML = '';
+
+              data.forEach(function(d, i) {
+                var colorPickerDiv = document.createElement('div');
+
+                var label = document.createElement('label');
+                label.setAttribute('for', 'colorPicker_' + i);
+                label.innerText = d.level;
+                colorPickerDiv.appendChild(label);
+
+                var colorPicker = document.createElement('input');
+                colorPicker.setAttribute('type', 'color');
+                colorPicker.setAttribute('id', 'colorPicker_' + i);
+                colorPicker.setAttribute('value', '#000000');
+                colorPickerDiv.appendChild(colorPicker);
+
+                document.getElementById('colorPickerContainer').appendChild(colorPickerDiv);
+              });
+            }
+
+            document.getElementById('updateChartButton').addEventListener('click', function() {
+                var colorScheme = data.map(function(d, i) {
+                    return document.getElementById('colorPicker_' + i).value;
+                });
+
+                createHistogram(data, colorScheme);
+            });
+
+            document.getElementById("saveButton").addEventListener("click", function(){
+                var svgElement = document.querySelector('svg');
+                var svgString = new XMLSerializer().serializeToString(svgElement);
+
+                var canvas = document.createElement("canvas");
+                canvas.width = svgElement.clientWidth;
+                canvas.height = svgElement.clientHeight;
+
+                var ctx = canvas.getContext("2d");
+                var DOMURL = self.URL || self.webkitURL || self;
+                var img = new Image();
+                var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+                var url = DOMURL.createObjectURL(svg);
+                
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                    var png = canvas.toDataURL("image/png");
+                    DOMURL.revokeObjectURL(png);
+
+                    var categoria = d3.select('#catSelect').property('value');
+                    var filters_string = "{{ filters_string }}";
+                    var filename = 'histograma_' + filters_string + '_' + categoria + '.png';
+                    saveAs(png, filename);
+                };
+                
+                img.src = url;
+            });
+
+            document.getElementById("copyButton").addEventListener("click", function() {
+                var svgElement = document.querySelector('svg');
+                var svgString = new XMLSerializer().serializeToString(svgElement);
+
+                var canvas = document.createElement("canvas");
+                canvas.width = svgElement.clientWidth;
+                canvas.height = svgElement.clientHeight;
+
+                var ctx = canvas.getContext("2d");
+                var DOMURL = self.URL || self.webkitURL || self;
+                var img = new Image();
+                var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+                var url = DOMURL.createObjectURL(svg);
+                
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                    DOMURL.revokeObjectURL(url);
+                    
+                    canvas.toBlob(function(blob) {
+                        var item = new ClipboardItem({'image/png': blob});
+                        navigator.clipboard.write([item]).then(function() {
+                            alert('Gráfico copiado para a área de transferência!');
+                        }, function(err) {
+                            console.error('Erro ao copiar o gráfico: ', err);
+                        });
+                    });
+                };
+                img.src = url;
+            });
         });
-    }
-
-    return histogramData;
-}
-
-// Função auxiliar para obter a lista de variáveis numéricas
-function getNumericVariables(data) {
-    return Object.keys(data);
-}
-
-// Função auxiliar para obter a lista de variáveis categóricas
-function getCategoricalVariables(data) {
-    // Aqui assumimos que as categorias são as mesmas em todos os dados numéricos
-    // Então, apenas pegamos as chaves do primeiro conjunto de dados numéricos
-    var firstNumericData = data[Object.keys(data)[0]];
-    var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
-    var categories = categories.filter(onlyUnique)
-    return categories;
-}
-function onlyUnique(value, index, array) {
-  return array.indexOf(value) === index;
-}
-
-d3.json('/visualizacao').then(function(data) {
-    console.log(data);
-    console.log(Object.keys(data));
-
-    // Preenchendo a seleção dropdown com as variáveis numéricas
-    var dropdown = d3.select('#numVarSelect');
-    dropdown.selectAll('option')
-        .data(getNumericVariables(data))
-        .enter()
-        .append('option')
-        .attr('value', function(d) { return d; })
-        .text(function(d) { return d; });
-
-    // Preenchendo a seleção dropdown com as categorias
-    var catDropdown = d3.select('#catSelect');
-    catDropdown.selectAll('option')
-        .data(getCategoricalVariables(data)) // Use a função auxiliar para obter as variáveis categóricas.
-        .enter()
-        .append('option')
-        .attr('value', function(d) { return d; })
-        .text(function(d) { return d; });
-
-    // Criando o boxplot para a chave selecionada
-    function updatehistogram() {
-    d3.select('#histogram').selectAll("svg").remove();
-
-    var varNumerica = dropdown.property('value');
-    var categoria = catDropdown.property('value');
-
-    var preparedData = prepareData(data, varNumerica, categoria);
-    var histogramData = generatehistogramData(preparedData, varNumerica, categoria);
-    updateData(histogramData);
-    createhistogram(histogramData);
-}
-
-    dropdown.on('change', updatehistogram);
-    catDropdown.on('change', updatehistogram);
-
-        // Gerando o boxplot inicial
-        updatehistogram();
-    }).catch(function(error){
-        console.log(error);
-    });
-
-
-function updateData(newData) {
-  data = newData;
-
-  // Limpa os seletores de cores existentes
-  document.getElementById('colorPickerContainer').innerHTML = '';
-
-  // Cria um novo seletor de cores para cada 'level' nos novos dados
-  data.forEach(function(d, i) {
-    var colorPickerDiv = document.createElement('div');
-
-    var label = document.createElement('label');
-    label.setAttribute('for', 'colorPicker_' + i);
-    label.innerText = d.level;
-    colorPickerDiv.appendChild(label);
-
-    var colorPicker = document.createElement('input');
-    colorPicker.setAttribute('type', 'color');
-    colorPicker.setAttribute('id', 'colorPicker_' + i);
-    colorPicker.setAttribute('value', '#000000');
-    colorPickerDiv.appendChild(colorPicker);
-
-    document.getElementById('colorPickerContainer').appendChild(colorPickerDiv);
-  });
-
-
-
-}
-document.getElementById('updateChartButton').addEventListener('click', function() {
-  // Coleta as cores selecionadas
-  var colorScheme = data.map(function(d, i) {
-    return document.getElementById('colorPicker_' + i).value;
-  });
-
-  // Atualiza o gráfico com as cores selecionadas
-  console.log("oioi")
-  console.log(colorScheme)
-  createhistogram(data, colorScheme);
-});
-});
-document.getElementById("saveButton").addEventListener("click", function(){
-    var svgElement = document.querySelector('svg');
-    var svgString = new XMLSerializer().serializeToString(svgElement);
-
-    var canvas = document.createElement("canvas");
-    // Define o tamanho do canvas para o mesmo tamanho do SVG
-    canvas.width = svgElement.clientWidth;
-    canvas.height = svgElement.clientHeight;
-
-    var ctx = canvas.getContext("2d");
-    var DOMURL = self.URL || self.webkitURL || self;
-    var img = new Image();
-    var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
-    var url = DOMURL.createObjectURL(svg);
-    
-    img.onload = function() {
-        ctx.drawImage(img, 0, 0);
-        var png = canvas.toDataURL("image/png");
-        DOMURL.revokeObjectURL(png);
-
-        
-        var categoria = d3.select('#catSelect').property('value');
-
-        var filters_string = "{{ filters_string }}"; // Use a sintaxe Jinja para inserir filters_string
-
-        var filename = 'histograma_' + filters_string + '_' + categoria + '.png';
-        // Usando FileSaver para salvar a imagem
-        saveAs(png, filename);
-    };
-    
-    img.src = url;
-});
-</script>
-    
+    </script>
 </body>
 </html>

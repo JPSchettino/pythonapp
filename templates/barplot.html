@@ -13,8 +13,8 @@
             position: absolute;
             top: 10px;
             left: 10px;
-            width: 250px; /* ajuste o valor de acordo com o tamanho desejado */
-            height: auto; /* para manter a proporção da imagem */
+            width: 250px;
+            height: auto;
         }
         body {
             font-family: 'Sora', Light;
@@ -49,10 +49,10 @@
             overflow: auto;
             padding: 20px;
             background: rgba(0,0,0,0.7);
-            transition: all 0.5s ease;  /* Transição suave */
+            transition: all 0.5s ease;
         }
         .sidebar-hidden {
-            right: -200px;  /* Esconder a sidebar movendo-a para fora da tela */
+            right: -200px;
         }
         .sidebar ul {
             list-style-type: none;
@@ -76,12 +76,10 @@
             margin-right: 20px;
             transition: all 0.3s ease;
         }
-
         select:focus {
             box-shadow: 0px 2px 6px 1px #19B1A1;
             outline: none;
         }
-
         button {
             padding: 10px 20px;
             border: none;
@@ -92,15 +90,12 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-
         button:hover {
             background-color: #307FE2;
         }
-
         button:active {
             transform: scale(0.98);
         }
-
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
@@ -109,328 +104,326 @@
 </head>
 <body>
     <header>
-        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+        <img class="logo" src="static/logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
     </header>
     <div class="container">
         <h1>Gráficos de barra (filtrados por {{ filters_string }})</h1>
-
-        <!-- Adicionando seleção dropdown e gráfico de boxplot -->
         <div class="graph-container">
             <h2>Gráficos de barra:</h2>
             <select id="numVarSelect"></select>
             <select id="catSelect"></select>
             <button id="saveButton">Salvar como PNG</button>
+            <button id="copyButton">Copiar gráfico</button>
             <div id="barplot"></div>
             <div id="colorPickerContainer"></div>
             <button id="updateChartButton">Atualizar gráfico</button>
-            
         </div>
-
-        <!-- O resto do seu HTML ... -->
+        <div class="explanation">
+            Este gráfico de barras representa a média dos valores para diferentes categorias. Cada barra mostra a média e o desvio padrão para a categoria correspondente, indicado pelas linhas de erro. As cores das barras podem ser personalizadas usando o seletor de cores abaixo do gráfico.
+        </div>
     </div>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
- window.addEventListener('load', function() {
- console.log("boxplot.js carregado");
+        window.addEventListener('load', function() {
+            console.log("barplot.js carregado");
 
- function createBarplot(data, colorScheme) {
-    d3.select('#barplot').selectAll("svg").remove();
+            function createBarplot(data, colorScheme) {
+                d3.select('#barplot').selectAll("svg").remove();
 
-    var margin = {top: 50, right: 50, bottom: 50, left: 50},
-        width = 800 - margin.left - margin.right,
-        height = 400 - margin.top - margin.bottom;
+                var margin = {top: 50, right: 50, bottom: 50, left: 50},
+                    width = 800 - margin.left - margin.right,
+                    height = 400 - margin.top - margin.bottom;
 
-    var x = d3.scaleBand()
-        .rangeRound([0, width])
-        .padding(0.1)
-        .domain(data.map(function(d) { return d.level; }));
+                var x = d3.scaleBand()
+                    .rangeRound([0, width])
+                    .padding(0.1)
+                    .domain(data.map(function(d) { return d.level; }));
 
-    var y = d3.scaleLinear()
-        .range([height, 0])
-        .domain([0, d3.max(data, function(d) { return d.values.max; })]);
+                var y = d3.scaleLinear()
+                    .range([height, 0])
+                    .domain([0, d3.max(data, function(d) { return d.values.max; })]);
 
-    var svg = d3.select("#barplot").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-        .style("background-color", "white");
+                var svg = d3.select("#barplot").append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                    .style("background-color", "white");
 
-    // Adicionar linhas de grade
-    function make_x_gridlines() {   
-        return d3.axisBottom(x).ticks(5)
-    }
-    
-    function make_y_gridlines() {   
-        return d3.axisLeft(y).ticks(5)
-    }
+                function make_x_gridlines() {   
+                    return d3.axisBottom(x).ticks(5);
+                }
 
-    svg.append("g")
-        .attr("class", "grid")
-        .attr("transform", "translate(0," + height + ")")
-        .call(make_x_gridlines()
-            .tickSize(-height)
-            .tickFormat("")
-        )
+                function make_y_gridlines() {   
+                    return d3.axisLeft(y).ticks(5);
+                }
 
-    svg.append("g")			
-        .attr("class", "grid")
-        .call(make_y_gridlines()
-            .tickSize(-width)
-            .tickFormat("")
-        )
-  
-    svg.append("g")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x));
+                svg.append("g")
+                    .attr("class", "grid")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(make_x_gridlines()
+                        .tickSize(-height)
+                        .tickFormat("")
+                    );
 
-    svg.append("g")
-        .call(d3.axisLeft(y));
+                svg.append("g")			
+                    .attr("class", "grid")
+                    .call(make_y_gridlines()
+                        .tickSize(-width)
+                        .tickFormat("")
+                    );
 
-    var boxWidth = 50;
+                svg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
 
-    // Desenhar barras em vez de caixas
-    var rect = svg.selectAll(".bar")
-        .data(data)
-        .enter().append("rect")
-        .attr("x", function(d) { return x(d.level); })
-        .attr("y", function(d) { return y(d.values.mean); })
-        .attr("height", function(d) { return height - y(d.values.mean); }) // altura da barra é a média
-        .attr("width", x.bandwidth())
-        .attr("fill", function(d, i) { return colorScheme[i]; })
-        .attr("stroke", "black");
+                svg.append("g")
+                    .call(d3.axisLeft(y));
 
-    // Animação para tornar o gráfico mais impressionante
-    rect.transition()
-        .duration(800)
-        .attr("y", function(d) { return y(d.values.mean); })
-        .attr("height", function(d) { return height - y(d.values.mean); })
-        .delay(function(d,i){return(i*100)})
+                var boxWidth = 50;
 
+                var rect = svg.selectAll(".bar")
+                    .data(data)
+                    .enter().append("rect")
+                    .attr("x", function(d) { return x(d.level); })
+                    .attr("y", function(d) { return y(d.values.mean); })
+                    .attr("height", function(d) { return height - y(d.values.mean); })
+                    .attr("width", x.bandwidth())
+                    .attr("fill", function(d, i) { return colorScheme[i]; })
+                    .attr("stroke", "black");
 
-    // Adicione linhas de erro para o desvio padrão
-    // Adicionar linhas de erro para o desvio padrão
-    var errorLines = svg.selectAll(".errorLine")
-        .data(data)
-        .enter().append("g")
-        .attr("class", "errorLine");
+                rect.transition()
+                    .duration(800)
+                    .attr("y", function(d) { return y(d.values.mean); })
+                    .attr("height", function(d) { return height - y(d.values.mean); })
+                    .delay(function(d,i){return(i*100)});
 
-    errorLines.append("line") // Linha vertical
-        .attr("x1", function(d) { return x(d.level) + x.bandwidth()/2; })
-        .attr("y1", function(d) { return y(d.values.mean - d.values.std); })
-        .attr("x2", function(d) { return x(d.level) + x.bandwidth()/2; })
-        .attr("y2", function(d) { return y(d.values.mean + d.values.std); })
-        .transition() // adicionar transição
-        .duration(2000) // duração da transição
-        .attr("stroke", "#f44242") // vermelho para realçar as linhas de erro
-        .attr("stroke-width", "2"); // espessura da linha de erro
+                var errorLines = svg.selectAll(".errorLine")
+                    .data(data)
+                    .enter().append("g")
+                    .attr("class", "errorLine");
 
-    var tuftLength = 10; // Define o comprimento dos tufos
+                errorLines.append("line")
+                    .attr("x1", function(d) { return x(d.level) + x.bandwidth()/2; })
+                    .attr("y1", function(d) { return y(d.values.mean - d.values.std); })
+                    .attr("x2", function(d) { return x(d.level) + x.bandwidth()/2; })
+                    .attr("y2", function(d) { return y(d.values.mean + d.values.std); })
+                    .transition()
+                    .duration(2000)
+                    .attr("stroke", "#f44242")
+                    .attr("stroke-width", "2");
 
-    errorLines.append("line") // Tufo superior
-        .attr("x1", function(d) { return x(d.level) + x.bandwidth()/2 - tuftLength/2; })
-        .attr("y1", function(d) { return y(d.values.mean + d.values.std); })
-        .attr("x2", function(d) { return x(d.level) + x.bandwidth()/2 + tuftLength/2; })
-        .attr("y2", function(d) { return y(d.values.mean + d.values.std); })
-        .attr("stroke", "#f44242")
-        .attr("stroke-width", "2");
+                var tuftLength = 10;
 
-    errorLines.append("line") // Tufo inferior
-        .attr("x1", function(d) { return x(d.level) + x.bandwidth()/2 - tuftLength/2; })
-        .attr("y1", function(d) { return y(d.values.mean - d.values.std); })
-        .attr("x2", function(d) { return x(d.level) + x.bandwidth()/2 + tuftLength/2; })
-        .attr("y2", function(d) { return y(d.values.mean - d.values.std); })
-        .attr("stroke", "#f44242")
-        .attr("stroke-width", "2");
+                errorLines.append("line")
+                    .attr("x1", function(d) { return x(d.level) + x.bandwidth()/2 - tuftLength/2; })
+                    .attr("y1", function(d) { return y(d.values.mean + d.values.std); })
+                    .attr("x2", function(d) { return x(d.level) + x.bandwidth()/2 + tuftLength/2; })
+                    .attr("y2", function(d) { return y(d.values.mean + d.values.std); })
+                    .attr("stroke", "#f44242")
+                    .attr("stroke-width", "2");
 
-    // Adicione títulos aos eixos
-    svg.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 0 - margin.left)
-        .attr("x", 0 - (height / 2))
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
-        .text("Value");  // Substitua "Value" pelo título apropriado para o eixo Y
+                errorLines.append("line")
+                    .attr("x1", function(d) { return x(d.level) + x.bandwidth()/2 - tuftLength/2; })
+                    .attr("y1", function(d) { return y(d.values.mean - d.values.std); })
+                    .attr("x2", function(d) { return x(d.level) + x.bandwidth()/2 + tuftLength/2; })
+                    .attr("y2", function(d) { return y(d.values.mean - d.values.std); })
+                    .attr("stroke", "#f44242")
+                    .attr("stroke-width", "2");
 
-    svg.append("text")
-        .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top) + ")")
-        .style("text-anchor", "middle")
-        .text("Level");  // Substitua "Level" pelo título apropriado para o eixo X
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0 - margin.left)
+                    .attr("x", 0 - (height / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .text("");
 
-    var meanLabels = svg.selectAll(".meanLabel")
-        .data(data)
-        .enter().append("text")
-        .attr("class", "meanLabel")
-        .attr("x", function(d) { return x(d.level) + x.bandwidth()/2; }) // centraliza o texto
-        .attr("y", function(d) { return y(d.values.mean) + 200; }) // adiciona um pequeno deslocamento para baixo, ajuste este valor conforme necessário
-        .text(function(d) { return d.values.mean.toFixed(2); }) // arredonda para duas casas decimais
-        .attr("text-anchor", "middle") // centraliza o texto horizontalmente
-        .attr("fill", "#000000") // usa a mesma cor da barra
-        .style("font-weight", "bold"); // faz a fonte ser mais espessa
-}
+                svg.append("text")
+                    .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top) + ")")
+                    .style("text-anchor", "middle")
+                    .text("");
 
-// Função para preparar os dados
-function prepareData(data, varNumerica, categoria) {
-    // Calcular média e desvio padrão em vez de mínimo, máximo e quartis
-    var dataForVar = data[varNumerica][`barplot_${categoria}`];
-    return dataForVar;
-}
-
-// Função para gerar dados do gráfico de barras
-function generateBarplotData(preparedData, varNumerica, categoria) {
-    var barplotData = [];
-
-    for (var subcategoria in preparedData['mean']) {
-        barplotData.push({
-            level: subcategoria,
-            values: {
-                mean: preparedData['mean'][subcategoria],
-                std: preparedData['std'][subcategoria],
-                max: preparedData['max'][subcategoria]
+                var meanLabels = svg.selectAll(".meanLabel")
+                    .data(data)
+                    .enter().append("text")
+                    .attr("class", "meanLabel")
+                    .attr("x", function(d) { return x(d.level) + x.bandwidth()/2; })
+                    .attr("y", function(d) { return y(d.values.mean) + 200; })
+                    .text(function(d) { return d.values.mean.toFixed(2); })
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "#000000")
+                    .style("font-weight", "bold");
             }
+
+            function prepareData(data, varNumerica, categoria) {
+                var dataForVar = data[varNumerica][`barplot_${categoria}`];
+                return dataForVar;
+            }
+
+            function generateBarplotData(preparedData, varNumerica, categoria) {
+                var barplotData = [];
+
+                for (var subcategoria in preparedData['mean']) {
+                    barplotData.push({
+                        level: subcategoria,
+                        values: {
+                            mean: preparedData['mean'][subcategoria],
+                            std: preparedData['std'][subcategoria],
+                            max: preparedData['max'][subcategoria]
+                        }
+                    });
+                }
+
+                return barplotData;
+            }
+
+            function getNumericVariables(data) {
+                return Object.keys(data);
+            }
+
+            function getCategoricalVariables(data) {
+                var firstNumericData = data[Object.keys(data)[0]];
+                var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
+                var categories = categories.filter(onlyUnique)
+                return categories;
+            }
+            function onlyUnique(value, index, array) {
+              return array.indexOf(value) === index;
+            }
+
+            d3.json('/visualizacao').then(function(data) {
+                console.log(data);
+                console.log(Object.keys(data));
+
+                var dropdown = d3.select('#numVarSelect');
+                dropdown.selectAll('option')
+                    .data(getNumericVariables(data))
+                    .enter()
+                    .append('option')
+                    .attr('value', function(d) { return d; })
+                    .text(function(d) { return d; });
+
+                var catDropdown = d3.select('#catSelect');
+                catDropdown.selectAll('option')
+                    .data(getCategoricalVariables(data))
+                    .enter()
+                    .append('option')
+                    .attr('value', function(d) { return d; })
+                    .text(function(d) { return d; });
+
+                function updateBarplot() {
+                    d3.select('#barplot').selectAll("svg").remove();
+
+                    var varNumerica = dropdown.property('value');
+                    var categoria = catDropdown.property('value');
+
+                    var preparedData = prepareData(data, varNumerica, categoria);
+                    var barplotData = generateBarplotData(preparedData, varNumerica, categoria);
+                    updateData(barplotData);
+                    createBarplot(barplotData);
+                }
+
+                dropdown.on('change', updateBarplot);
+                catDropdown.on('change', updateBarplot);
+
+                updateBarplot();
+            }).catch(function(error){
+                console.log(error);
+            });
+
+            function updateData(newData) {
+              data = newData;
+
+              document.getElementById('colorPickerContainer').innerHTML = '';
+
+              data.forEach(function(d, i) {
+                var colorPickerDiv = document.createElement('div');
+
+                var label = document.createElement('label');
+                label.setAttribute('for', 'colorPicker_' + i);
+                label.innerText = d.level;
+                colorPickerDiv.appendChild(label);
+
+                var colorPicker = document.createElement('input');
+                colorPicker.setAttribute('type', 'color');
+                colorPicker.setAttribute('id', 'colorPicker_' + i);
+                colorPicker.setAttribute('value', '#000000');
+                colorPickerDiv.appendChild(colorPicker);
+
+                document.getElementById('colorPickerContainer').appendChild(colorPickerDiv);
+              });
+            }
+
+            document.getElementById('updateChartButton').addEventListener('click', function() {
+              var colorScheme = data.map(function(d, i) {
+                return document.getElementById('colorPicker_' + i).value;
+              });
+
+              createBarplot(data, colorScheme);
+            });
+
+            document.getElementById("saveButton").addEventListener("click", function(){
+                var svgElement = document.querySelector('svg');
+                var svgString = new XMLSerializer().serializeToString(svgElement);
+
+                var canvas = document.createElement("canvas");
+                canvas.width = svgElement.clientWidth;
+                canvas.height = svgElement.clientHeight;
+
+                var ctx = canvas.getContext("2d");
+                var DOMURL = self.URL || self.webkitURL || self;
+                var img = new Image();
+                var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+                var url = DOMURL.createObjectURL(svg);
+                
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                    var png = canvas.toDataURL("image/png");
+                    DOMURL.revokeObjectURL(png);
+
+                    var varNumerica = d3.select('#numVarSelect').property('value');
+                    var categoria = d3.select('#catSelect').property('value');
+
+                    var filters_string = "{{ filters_string }}";
+
+                    var filename = 'barplot_' + filters_string + '_' + varNumerica + '_' + categoria + '.png';
+                    saveAs(png, filename);
+                };
+                
+                img.src = url;
+            });
+
+            document.getElementById("copyButton").addEventListener("click", function() {
+                var svgElement = document.querySelector('svg');
+                var svgString = new XMLSerializer().serializeToString(svgElement);
+
+                var canvas = document.createElement("canvas");
+                canvas.width = svgElement.clientWidth;
+                canvas.height = svgElement.clientHeight;
+
+                var ctx = canvas.getContext("2d");
+                var DOMURL = self.URL || self.webkitURL || self;
+                var img = new Image();
+                var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+                var url = DOMURL.createObjectURL(svg);
+                
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                    DOMURL.revokeObjectURL(url);
+                    
+                    canvas.toBlob(function(blob) {
+                        var item = new ClipboardItem({'image/png': blob});
+                        navigator.clipboard.write([item]).then(function() {
+                            alert('Gráfico copiado para a área de transferência!');
+                        }, function(err) {
+                            console.error('Erro ao copiar o gráfico: ', err);
+                        });
+                    });
+                };
+                img.src = url;
+            });
         });
-    }
-
-    return barplotData;
-}
-
-// Função auxiliar para obter a lista de variáveis numéricas
-function getNumericVariables(data) {
-    return Object.keys(data);
-}
-
-// Função auxiliar para obter a lista de variáveis categóricas
-function getCategoricalVariables(data) {
-    // Aqui assumimos que as categorias são as mesmas em todos os dados numéricos
-    // Então, apenas pegamos as chaves do primeiro conjunto de dados numéricos
-    var firstNumericData = data[Object.keys(data)[0]];
-    var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
-    var categories = categories.filter(onlyUnique)
-    return categories;
-}
-function onlyUnique(value, index, array) {
-  return array.indexOf(value) === index;
-}
-
-d3.json('/visualizacao').then(function(data) {
-    console.log(data);
-    console.log(Object.keys(data));
-
-    // Preenchendo a seleção dropdown com as variáveis numéricas
-    var dropdown = d3.select('#numVarSelect');
-    dropdown.selectAll('option')
-        .data(getNumericVariables(data))
-        .enter()
-        .append('option')
-        .attr('value', function(d) { return d; })
-        .text(function(d) { return d; });
-
-    // Preenchendo a seleção dropdown com as categorias
-    var catDropdown = d3.select('#catSelect');
-    catDropdown.selectAll('option')
-        .data(getCategoricalVariables(data)) // Use a função auxiliar para obter as variáveis categóricas.
-        .enter()
-        .append('option')
-        .attr('value', function(d) { return d; })
-        .text(function(d) { return d; });
-
-    // Criando o boxplot para a chave selecionada
-    function updateBarplot() {
-    d3.select('#barplot').selectAll("svg").remove();
-
-    var varNumerica = dropdown.property('value');
-    var categoria = catDropdown.property('value');
-
-    var preparedData = prepareData(data, varNumerica, categoria);
-    var barplotData = generateBarplotData(preparedData, varNumerica, categoria);
-    updateData(barplotData);
-    createBarplot(barplotData);
-}
-
-    dropdown.on('change', updateBarplot);
-    catDropdown.on('change', updateBarplot);
-
-        // Gerando o boxplot inicial
-        updateBarplot();
-    }).catch(function(error){
-        console.log(error);
-    });
-
-
-function updateData(newData) {
-  data = newData;
-
-  // Limpa os seletores de cores existentes
-  document.getElementById('colorPickerContainer').innerHTML = '';
-
-  // Cria um novo seletor de cores para cada 'level' nos novos dados
-  data.forEach(function(d, i) {
-    var colorPickerDiv = document.createElement('div');
-
-    var label = document.createElement('label');
-    label.setAttribute('for', 'colorPicker_' + i);
-    label.innerText = d.level;
-    colorPickerDiv.appendChild(label);
-
-    var colorPicker = document.createElement('input');
-    colorPicker.setAttribute('type', 'color');
-    colorPicker.setAttribute('id', 'colorPicker_' + i);
-    colorPicker.setAttribute('value', '#000000');
-    colorPickerDiv.appendChild(colorPicker);
-
-    document.getElementById('colorPickerContainer').appendChild(colorPickerDiv);
-  });
-
-
-
-}
-document.getElementById('updateChartButton').addEventListener('click', function() {
-  // Coleta as cores selecionadas
-  var colorScheme = data.map(function(d, i) {
-    return document.getElementById('colorPicker_' + i).value;
-  });
-
-  // Atualiza o gráfico com as cores selecionadas
-  console.log("oioi")
-  console.log(colorScheme)
-  createBarplot(data, colorScheme);
-});
-});
-document.getElementById("saveButton").addEventListener("click", function(){
-    var svgElement = document.querySelector('svg');
-    var svgString = new XMLSerializer().serializeToString(svgElement);
-
-    var canvas = document.createElement("canvas");
-    // Define o tamanho do canvas para o mesmo tamanho do SVG
-    canvas.width = svgElement.clientWidth;
-    canvas.height = svgElement.clientHeight;
-
-    var ctx = canvas.getContext("2d");
-    var DOMURL = self.URL || self.webkitURL || self;
-    var img = new Image();
-    var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
-    var url = DOMURL.createObjectURL(svg);
-    
-    img.onload = function() {
-        ctx.drawImage(img, 0, 0);
-        var png = canvas.toDataURL("image/png");
-        DOMURL.revokeObjectURL(png);
-
-        // Usando FileSaver para salvar a imagem
-
-        var varNumerica = d3.select('#numVarSelect').property('value');
-        var categoria = d3.select('#catSelect').property('value');
-
-        var filters_string = "{{ filters_string }}"; // Use a sintaxe Jinja para inserir filters_string
-
-        var filename = 'barplot_' + filters_string + '_' + varNumerica + '_' + categoria + '.png';
-        // Usando FileSaver para salvar a imagem
-        saveAs(png, filename);
-    };
-    
-    img.src = url;
-});
-</script>
-    
+    </script>
 </body>
 </html>

@@ -116,9 +116,29 @@ def boxplot():
     for num_var in num_vars:
         graphs[num_var] = {}
         for cat_var in cat_vars:
+            # Cálculo de estatísticas descritivas
             graph_data = dataframe.groupby(cat_var)[num_var].describe()
-            graphs[num_var][f"barplot_{cat_var}"] = graph_data.to_dict()
-            graphs[num_var][f"boxplot_{cat_var}"] = graph_data.to_dict()
+            
+            # Adicionando média, mediana e quartis
+            boxplot_stats = {
+                'mean': dataframe.groupby(cat_var)[num_var].mean().to_dict(),
+                'median': dataframe.groupby(cat_var)[num_var].median().to_dict(),
+                'q1': graph_data['25%'].to_dict(),
+                'q3': graph_data['75%'].to_dict(),
+                'min': graph_data['min'].to_dict(),
+                'max': graph_data['max'].to_dict()
+            }
+            
+            # Incluindo rótulos para média e mediana
+            label_stats = {
+                'mean_label': {key: f'Média: {value:.2f}' for key, value in boxplot_stats['mean'].items()},
+                'median_label': {key: f'Mediana: {value:.2f}' for key, value in boxplot_stats['median'].items()}
+            }
+            
+            graphs[num_var][f"boxplot_{cat_var}"] = {
+                'boxplot_stats': boxplot_stats,
+                'labels': label_stats
+            }
 
         graph_data = dataframe[num_var].value_counts(normalize=True)
         graphs[num_var][f"histogram"] = graph_data.to_dict()
@@ -132,8 +152,7 @@ def boxplot():
 
     session['graphs'] = graphs
     print(graphs)
-    return render_template('boxplot.html', num_vars=num_vars, filters_string=filters_string, cat_vars=cat_vars, cat_levels=cat_levels,graphs=graphs)  # Substitua 'seu_arquivo.html' pelo nome do seu arquivo HTML
-
+    return render_template('boxplot.html', num_vars=num_vars, filters_string=filters_string, cat_vars=cat_vars, cat_levels=cat_levels, graphs=graphs)
 
 @app.route('/barplot', methods=['GET', 'POST'])
 def barplot():

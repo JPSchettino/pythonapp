@@ -142,11 +142,11 @@
         </ul>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
-    <script lang="javascript" src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-    <script>
-        console.log(XLSX);
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="templates\table2excel.js"></script>
 
+    <script>
         const sidebar = document.getElementById('sidebar');
 
         // Evento de passagem do mouse
@@ -173,67 +173,43 @@
         });
 
         function copyTableToClipboard(tableID) {
-                var table = document.getElementById(tableID);
-                var range, sel;
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(table.innerText).then(() => {
-                        alert("Tabela copiada para a área de transferência");
-                    }).catch(err => {
-                        alert("Falha ao copiar a tabela: ", err);
-                    });
-                } else {
-                    // Fallback para navegadores antigos
-                    if (document.createRange && window.getSelection) {
-                        range = document.createRange();
-                        sel = window.getSelection();
-                        sel.removeAllRanges();
-                        try {
-                            range.selectNodeContents(table);
-                            sel.addRange(range);
-                        } catch (e) {
-                            range.selectNode(table);
-                            sel.addRange(range);
-                        }
-                        document.execCommand("copy");
-                        sel.removeAllRanges();
-                        alert("Tabela copiada para a área de transferência");
-                    } else if (document.body.createTextRange) {
-                        range = document.body.createTextRange();
-                        range.moveToElementText(table);
-                        range.select();
-                        range.execCommand("Copy");
-                        alert("Tabela copiada para a área de transferência");
-                    }
-                }
-            }
+            var table = document.getElementById(tableID);
+            var textArea = document.createElement("textarea");
+            var rows = table.querySelectorAll("tr");
+            
+            var text = "";
+            rows.forEach(row => {
+                var cells = row.querySelectorAll("th, td");
+                var rowText = [];
+                cells.forEach(cell => {
+                    rowText.push(cell.innerText.trim());
+                });
+                text += rowText.join("\t") + "\n";  // Usando tabulações para separar células
+            });
 
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+
+            alert("Tabela copiada para a área de transferência");
+        }
 
         function exportTableToExcel(tableID) {
-                var table = document.getElementById(tableID);
-                if (!table) {
-                    alert("Tabela não encontrada!");
-                    return;
-                }
+            var table = document.getElementById(tableID);
+            // Remover spans e aplicar estilos se necessário
+            table.querySelectorAll('span').forEach(span => span.replaceWith(span.innerText));
+            
+            var sheet = XLSX.utils.table_to_sheet(table);
+            var workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, sheet, "Sheet1");
 
-                // Verifica se a biblioteca XLSX está disponível
-                if (typeof XLSX === 'undefined') {
-                    alert("Biblioteca XLSX não carregada!");
-                    return;
-                }
-
-                try {
-                    var wb = XLSX.utils.book_new();
-                    var ws = XLSX.utils.table_to_sheet(table);
-                    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-                    XLSX.writeFile(wb, tableID + ".xlsx");
-                    alert("Arquivo Excel gerado com sucesso!");
-                } catch (error) {
-                    alert("Erro ao gerar o arquivo Excel: " + error.message);
-                }
-            }
-
+            XLSX.writeFile(workbook, 'table_data.xlsx');
+        }
     </script>
 </body>
 </html>
+
 
 

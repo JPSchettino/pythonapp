@@ -222,7 +222,7 @@
         <button id="updateGraph">Atualizar gráfico</button>
         <button id="saveButton">Salvar como PNG</button>
         <input type="checkbox" id="showProducts" name="showProducts" value="Mostrar produtos">
-        <label for="showProducts"> Mostrar produtos</label><br>
+        <label for="showProducts"> Mostrar segmentação</label><br>
         <input type="checkbox" id="showHedonic" name="showHedonic" value="Mostrar hedonicas">
         <label for="showHedonic"> Mostrar hedonicas</label><br>
     </div> 
@@ -232,6 +232,26 @@
     <div id="chartContainer">
         <img id="chartImage2" src="" alt="Clustermap">
     </div> <!-- Fecha a div do container -->
+
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #0056b3;">Explicação do Mapa de Preferência Interna</h2>
+        <p>
+            O Mapa de Preferência Interna é uma ferramenta visual poderosa utilizada para entender as preferências dos consumidores ou as relações entre diferentes produtos ou categorias. Esta visualização é especialmente útil em estudos de mercado, como análise sensorial e de satisfação do cliente, onde a compreensão das percepções dos consumidores é fundamental.
+        </p>
+        <p>
+            No gráfico, técnicas de redução de dimensionalidade, como Análise de Componentes Principais (PCA) ou Análise de Fatores (FA), são empregadas para projetar dados complexos em um espaço bidimensional. Isso permite uma simplificação visual, destacando as principais variáveis que explicam a variabilidade nos dados. Os pontos no gráfico representam diferentes produtos ou categorias, posicionados de acordo com suas características, o que facilita a visualização de agrupamentos ou padrões de similaridade.
+        </p>
+        <p>
+            A escala de cores e símbolos é utilizada para diferenciar os produtos ou categorias, tornando a identificação visual mais intuitiva. Além disso, setas indicativas no gráfico mostram as direções dos fatores principais, ajudando a interpretar quais variáveis são mais influentes na separação dos dados e, portanto, nas preferências dos consumidores.
+        </p>
+        <p>
+            Em algumas análises, pode-se incluir uma estimativa de densidade por kernel (KDE), que indica a densidade de distribuição dos produtos no espaço bidimensional. As áreas mais escuras representam uma maior concentração de produtos, destacando zonas de alta densidade de preferências.
+        </p>
+        <p>
+            O Mapa de Preferência Interna é essencial para identificar grupos de produtos ou categorias percebidos de forma semelhante, detectar preferências do consumidor e guiar estratégias de marketing e desenvolvimento de produtos. Ele oferece insights valiosos sobre como as variáveis influenciam as percepções e preferências dos consumidores, orientando decisões estratégicas para aprimorar produtos e atender melhor às expectativas dos clientes.
+        </p>
+    </div>
+    
 
     <script>
     function updateDropdowns(selectedVariable1, selectedVariable2) {
@@ -290,7 +310,7 @@
                     success: function(data) {
                         $('#chartImage1').attr('src', 'data:image/png;base64,' + data.graf1);
                         $('#chartImage2').attr('src', 'data:image/png;base64,' + data.graf2);
-                        $('#filtersHeader').text('Gráficos JAR (filtrados por ' + data.filters_string + ')');
+                        $('#filtersHeader').text('Mapas de prefêrencia (filtrados por ' + data.filters_string + ')');
                         updateDropdowns(selectedVariable1, selectedVariable2); 
                     },
                     error: function(jqXHR, textStatus, errorThrown) {  // Added error handling
@@ -305,7 +325,7 @@
             var imgElement = document.getElementById('chartImage');
             var selectedVariable = $('#variableDropdown1').val();
             var filters_string = $('#filtersHeader').text().split(' ')[3]; // We assume that the filters string is the fourth word of the '#filtersHeader' text
-            var filename = 'JARPLOT_' + filters_string + '_' + selectedVariable + '.png';
+            var filename = 'PREFPLOT_' + filters_string + '_' + selectedVariable + '.png';
 
             fetch(imgElement.src)
                 .then(response => response.blob())

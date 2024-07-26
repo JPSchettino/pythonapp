@@ -146,7 +146,7 @@ def teste():
         filter_strings.append(f'{key}: {filter_value}')
     filters_string = ', '.join(filter_strings)
 
-
+    print(results_normality_html)
 
     return render_template('teste.html', results_normality_html=results_normality_html, 
                            results_tests_html=results_tests_html, 

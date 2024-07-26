@@ -13,8 +13,8 @@
             position: absolute;
             top: 10px;
             left: 10px;
-            width: 250px; /* ajuste o valor de acordo com o tamanho desejado */
-            height: auto; /* para manter a proporção da imagem */
+            width: 250px;
+            height: auto;
         }
         body {
             font-family: 'Sora', Light;
@@ -49,10 +49,10 @@
             overflow: auto;
             padding: 20px;
             background: rgba(0,0,0,0.7);
-            transition: all 0.5s ease;  /* Transição suave */
+            transition: all 0.5s ease;
         }
         .sidebar-hidden {
-            right: -200px;  /* Esconder a sidebar movendo-a para fora da tela */
+            right: -200px;
         }
         .sidebar ul {
             list-style-type: none;
@@ -76,12 +76,10 @@
             margin-right: 20px;
             transition: all 0.3s ease;
         }
-
         select:focus {
             box-shadow: 0px 2px 6px 1px #19B1A1;
             outline: none;
         }
-
         button {
             padding: 10px 20px;
             border: none;
@@ -92,15 +90,12 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-
         button:hover {
             background-color: #307FE2;
         }
-
         button:active {
             transform: scale(0.98);
         }
-
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
@@ -109,317 +104,336 @@
 </head>
 <body>
     <header>
-        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+        <img class="logo" src="static/logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
     </header>
     <div class="container">
         <h1>Boxplots (filtrados por {{ filters_string }})</h1>
-
-        <!-- Adicionando seleção dropdown e gráfico de boxplot -->
         <div class="graph-container">
             <h2>Boxplots:</h2>
             <select id="numVarSelect"></select>
             <select id="catSelect"></select>
             <button id="saveButton">Salvar como PNG</button>
+            <button id="copyButton">Copiar gráfico</button>
             <div id="boxplot"></div>
             <div id="colorPickerContainer"></div>
             <button id="updateChartButton">Atualizar gráfico</button>
-            
         </div>
-
-        <!-- O resto do seu HTML ... -->
+        <div class="explanation">
+            Os gráficos de boxplot exibem a distribuição de dados para diferentes categorias. Cada boxplot mostra a mediana (linha no centro da caixa), o intervalo interquartil (IQ, representado pela caixa), e os valores mínimos e máximos (linhas externas à caixa). Outliers podem ser identificados como pontos fora das linhas de máximo e mínimo. A linha no meio da caixa indica o valor mediano, enquanto as bordas superior e inferior da caixa representam o primeiro e o terceiro quartil, respectivamente. Isso fornece uma visão clara da dispersão e da simetria dos dados.
+        </div>
     </div>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
- window.addEventListener('load', function() {
- console.log("boxplot.js carregado");
+        window.addEventListener('load', function() {
+            console.log("boxplot.js carregado");
 
- function createBoxplot(data, colorScheme) {
-    d3.select('#boxplot').selectAll("svg").remove();
+            function createBoxplot(data, colorScheme) {
+                d3.select('#boxplot').selectAll("svg").remove();
 
-    var margin = {top: 50, right: 50, bottom: 50, left: 50},
-        width = 800 - margin.left - margin.right,
-        height = 400 - margin.top - margin.bottom;
+                var margin = {top: 50, right: 50, bottom: 50, left: 50},
+                    width = 800 - margin.left - margin.right,
+                    height = 400 - margin.top - margin.bottom;
 
-    var x = d3.scaleBand()
-        .rangeRound([0, width])
-        .padding(0.1)
-        .domain(data.map(function(d) { return d.level; }));
+                var x = d3.scaleBand()
+                    .rangeRound([0, width])
+                    .padding(0.1)
+                    .domain(data.map(function(d) { return d.level; }));
 
-    var y = d3.scaleLinear()
-        .range([height, 0])
-        .domain([0, d3.max(data, function(d) { return d.values.max; })]);
+                var y = d3.scaleLinear()
+                    .range([height, 0])
+                    .domain([0, d3.max(data, function(d) { return d.values.max; })]);
 
-    var svg = d3.select("#boxplot").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-        .style("background-color", "white");
+                var svg = d3.select("#boxplot").append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+                    .style("background-color", "white");
 
-    // Adicionar linhas de grade
-    function make_x_gridlines() {   
-        return d3.axisBottom(x).ticks(5)
-    }
-    
-    function make_y_gridlines() {   
-        return d3.axisLeft(y).ticks(5)
-    }
+                // Adicionar linhas de grade
+                function make_x_gridlines() {   
+                    return d3.axisBottom(x).ticks(5);
+                }
+                
+                function make_y_gridlines() {   
+                    return d3.axisLeft(y).ticks(5);
+                }
 
-    svg.append("g")
-        .attr("class", "grid")
-        .attr("transform", "translate(0," + height + ")")
-        .call(make_x_gridlines()
-            .tickSize(-height)
-            .tickFormat("")
-        )
+                svg.append("g")
+                    .attr("class", "grid")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(make_x_gridlines()
+                        .tickSize(-height)
+                        .tickFormat("")
+                    );
 
-    svg.append("g")			
-        .attr("class", "grid")
-        .call(make_y_gridlines()
-            .tickSize(-width)
-            .tickFormat("")
-        )
-  
-    svg.append("g")
-        .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x));
+                svg.append("g")			
+                    .attr("class", "grid")
+                    .call(make_y_gridlines()
+                        .tickSize(-width)
+                        .tickFormat("")
+                    );
 
-    svg.append("g")
-        .call(d3.axisLeft(y));
+                svg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
 
-    var boxWidth = 50;
+                svg.append("g")
+                    .call(d3.axisLeft(y));
 
-    // Animação para tornar o gráfico mais impressionante
-    var rect = svg.selectAll(".box")
-    .data(data)
-    .enter().append("rect")
-    .attr("x", function(d) { return x(d.level); })
-    .attr("y", height)
-    .attr("height", 0)
-    .attr("width", boxWidth)
-    .attr("fill", function(d, i) { return colorScheme[i]; })
-    .attr("stroke", "black");
+                var boxWidth = 50;
 
-    rect.transition()
-    .duration(800)
-    .attr("y", function(d) { return y(d.values.q3); })
-    .attr("height", function(d) { return y(d.values.q1) - y(d.values.q3); })
-    .delay(function(d,i){return(i*100)})
-    // draw line for min
-    svg.selectAll(".lineMin")
-        .data(data)
-        .enter().append("line")
-        .attr("x1", function(d) { return x(d.level) + boxWidth/2; })
-        .attr("y1", function(d) { return y(d.values.min); })
-        .attr("x2", function(d) { return x(d.level) + boxWidth/2; })
-        .attr("y2", function(d) { return y(d.values.q1); })
-        .attr("stroke", "black");
+                // Animação para tornar o gráfico mais impressionante
+                var rect = svg.selectAll(".box")
+                .data(data)
+                .enter().append("rect")
+                .attr("x", function(d) { return x(d.level); })
+                .attr("y", height)
+                .attr("height", 0)
+                .attr("width", boxWidth)
+                .attr("fill", function(d, i) { return colorScheme[i]; })
+                .attr("stroke", "black");
 
-    // draw line for max
-    svg.selectAll(".lineMax")
-        .data(data)
-        .enter().append("line")
-        .attr("x1", function(d) { return x(d.level) + boxWidth/2; })
-        .attr("y1", function(d) { return y(d.values.q3); })
-        .attr("x2", function(d) { return x(d.level) + boxWidth/2; })
-        .attr("y2", function(d) { return y(d.values.max); })
-        .attr("stroke", "black");
+                rect.transition()
+                .duration(800)
+                .attr("y", function(d) { return y(d.values.q3); })
+                .attr("height", function(d) { return y(d.values.q1) - y(d.values.q3); })
+                .delay(function(d,i){return(i*100)});
 
-    // draw line for median (median = q2 in this case)
-    svg.selectAll(".lineMedian")
-        .data(data)
-        .enter().append("line")
-        .attr("x1", function(d) { return x(d.level); })
-        .attr("y1", function(d) { return y(d.values.q2); })
-        .attr("x2", function(d) { return x(d.level) + boxWidth; })
-        .attr("y2", function(d) { return y(d.values.q2); })
-        .attr("stroke", "black");
+                // draw line for min
+                svg.selectAll(".lineMin")
+                    .data(data)
+                    .enter().append("line")
+                    .attr("x1", function(d) { return x(d.level) + boxWidth/2; })
+                    .attr("y1", function(d) { return y(d.values.min); })
+                    .attr("x2", function(d) { return x(d.level) + boxWidth/2; })
+                    .attr("y2", function(d) { return y(d.values.q1); })
+                    .attr("stroke", "black");
 
-    // Adicione títulos aos eixos
-    svg.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 0 - margin.left)
-        .attr("x", 0 - (height / 2))
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
-        .text("Value");  // Substitua "Value" pelo título apropriado para o eixo Y
+                // draw line for max
+                svg.selectAll(".lineMax")
+                    .data(data)
+                    .enter().append("line")
+                    .attr("x1", function(d) { return x(d.level) + boxWidth/2; })
+                    .attr("y1", function(d) { return y(d.values.q3); })
+                    .attr("x2", function(d) { return x(d.level) + boxWidth/2; })
+                    .attr("y2", function(d) { return y(d.values.max); })
+                    .attr("stroke", "black");
 
-    svg.append("text")
-        .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top) + ")")
-        .style("text-anchor", "middle")
-        .text("Level");  // Substitua "Level" pelo título apropriado para o eixo X
-}
+                // draw line for median (median = q2 in this case)
+                svg.selectAll(".lineMedian")
+                    .data(data)
+                    .enter().append("line")
+                    .attr("x1", function(d) { return x(d.level); })
+                    .attr("y1", function(d) { return y(d.values.q2); })
+                    .attr("x2", function(d) { return x(d.level) + boxWidth; })
+                    .attr("y2", function(d) { return y(d.values.q2); })
+                    .attr("stroke", "black");
 
-// Função para preparar os dados
-function prepareData(data, varNumerica, categoria) {
-    // Acesse os dados corretos com base na varNumerica e na categoria.
-    var dataForVar = data[varNumerica][`boxplot_${categoria}`];
-    return dataForVar;
-}
+                // Adicionar rótulos para a mediana
+                svg.selectAll(".textMedian")
+                    .data(data)
+                    .enter().append("text")
+                    .attr("x", function(d) { return x(d.level) + boxWidth / 2; })
+                    .attr("y", function(d) { return y(d.values.q2); })
+                    .attr("dy", -5)
+                    .attr("text-anchor", "middle")
+                    .style("font-weight", "bold")
+                    .text(function(d) { return d.values.q2.toFixed(2); });
 
-// Função para gerar dados do boxplot
-function generateBoxplotData(preparedData, varNumerica, categoria) {
-    console.log("iniciando generateBoxplotData")
-    var boxplotData = [];
-    console.log(preparedData)
+                // Adicione títulos aos eixos
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0 - margin.left)
+                    .attr("x", 0 - (height / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .text("");  // Substitua "Value" pelo título apropriado para o eixo Y
 
-    for (var subcategoria in preparedData['min']) {
-        boxplotData.push({
-            level: subcategoria,
-            values: {
-                min: preparedData['min'][subcategoria],
-                q1: preparedData['25%'][subcategoria],
-                q2: preparedData['50%'][subcategoria],
-                q3: preparedData['75%'][subcategoria],
-                max: preparedData['max'][subcategoria],
-                outlier: [] // You might need to adjust this based on your data
+                svg.append("text")
+                    .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top) + ")")
+                    .style("text-anchor", "middle")
+                    .text("");  // Substitua "Level" pelo título apropriado para o eixo X
             }
+
+            function prepareData(data, varNumerica, categoria) {
+                var dataForVar = data[varNumerica][`boxplot_${categoria}`];
+                return dataForVar;
+            }
+
+            function generateBoxplotData(preparedData, varNumerica, categoria) {
+                console.log("iniciando generateBoxplotData")
+                var boxplotData = [];
+                console.log(preparedData)
+
+                for (var subcategoria in preparedData['min']) {
+                    boxplotData.push({
+                        level: subcategoria,
+                        values: {
+                            min: preparedData['min'][subcategoria],
+                            q1: preparedData['25%'][subcategoria],
+                            q2: preparedData['50%'][subcategoria],
+                            q3: preparedData['75%'][subcategoria],
+                            max: preparedData['max'][subcategoria],
+                            outlier: [] // You might need to adjust this based on your data
+                        }
+                    });
+                }
+
+                return boxplotData;
+            }
+
+            function getNumericVariables(data) {
+                return Object.keys(data);
+            }
+
+            function getCategoricalVariables(data) {
+                var firstNumericData = data[Object.keys(data)[0]];
+                var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
+                var categories = categories.filter(onlyUnique)
+                return categories;
+            }
+            function onlyUnique(value, index, array) {
+              return array.indexOf(value) === index;
+            }
+
+            d3.json('/visualizacao').then(function(data) {
+                console.log(data);
+                console.log(Object.keys(data));
+
+                var dropdown = d3.select('#numVarSelect');
+                dropdown.selectAll('option')
+                    .data(getNumericVariables(data))
+                    .enter()
+                    .append('option')
+                    .attr('value', function(d) { return d; })
+                    .text(function(d) { return d; });
+
+                var catDropdown = d3.select('#catSelect');
+                catDropdown.selectAll('option')
+                    .data(getCategoricalVariables(data))
+                    .enter()
+                    .append('option')
+                    .attr('value', function(d) { return d; })
+                    .text(function(d) { return d; });
+
+                function updateBoxplot() {
+                    d3.select('#boxplot').selectAll("svg").remove();
+
+                    var varNumerica = dropdown.property('value');
+                    var categoria = catDropdown.property('value');
+
+                    var preparedData = prepareData(data, varNumerica, categoria);
+                    console.log(preparedData)
+                    console.log("foi?")
+                    var boxplotData = generateBoxplotData(preparedData, varNumerica, categoria);
+                    updateData(boxplotData);
+                    console.log("foi?")
+                    console.log(boxplotData.data)
+                    console.log(boxplotData)
+                    createBoxplot(boxplotData);
+                }
+
+                dropdown.on('change', updateBoxplot);
+                catDropdown.on('change', updateBoxplot);
+
+                updateBoxplot();
+            }).catch(function(error){
+                console.log(error);
+            });
+
+            function updateData(newData) {
+              data = newData;
+
+              document.getElementById('colorPickerContainer').innerHTML = '';
+
+              data.forEach(function(d, i) {
+                var colorPickerDiv = document.createElement('div');
+
+                var label = document.createElement('label');
+                label.setAttribute('for', 'colorPicker_' + i);
+                label.innerText = d.level;
+                colorPickerDiv.appendChild(label);
+
+                var colorPicker = document.createElement('input');
+                colorPicker.setAttribute('type', 'color');
+                colorPicker.setAttribute('id', 'colorPicker_' + i);
+                colorPicker.setAttribute('value', '#000000');
+                colorPickerDiv.appendChild(colorPicker);
+
+                document.getElementById('colorPickerContainer').appendChild(colorPickerDiv);
+              });
+            }
+
+            document.getElementById('updateChartButton').addEventListener('click', function() {
+              var colorScheme = data.map(function(d, i) {
+                return document.getElementById('colorPicker_' + i).value;
+              });
+
+              createBoxplot(data, colorScheme);
+            });
+
+            document.getElementById("saveButton").addEventListener("click", function(){
+                var svgElement = document.querySelector('svg');
+                var svgString = new XMLSerializer().serializeToString(svgElement);
+
+                var canvas = document.createElement("canvas");
+                canvas.width = svgElement.clientWidth;
+                canvas.height = svgElement.clientHeight;
+
+                var ctx = canvas.getContext("2d");
+                var DOMURL = self.URL || self.webkitURL || self;
+                var img = new Image();
+                var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+                var url = DOMURL.createObjectURL(svg);
+                
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                    var png = canvas.toDataURL("image/png");
+                    DOMURL.revokeObjectURL(png);
+
+                    var varNumerica = d3.select('#numVarSelect').property('value');
+                    var categoria = d3.select('#catSelect').property('value');
+
+                    var filters_string = "{{ filters_string }}";
+
+                    var filename = 'boxplot_' + filters_string + '_' + varNumerica + '_' + categoria + '.png';
+                    saveAs(png, filename);
+                };
+                
+                img.src = url;
+            });
+
+            document.getElementById("copyButton").addEventListener("click", function() {
+                var svgElement = document.querySelector('svg');
+                var svgString = new XMLSerializer().serializeToString(svgElement);
+
+                var canvas = document.createElement("canvas");
+                canvas.width = svgElement.clientWidth;
+                canvas.height = svgElement.clientHeight;
+
+                var ctx = canvas.getContext("2d");
+                var DOMURL = self.URL || self.webkitURL || self;
+                var img = new Image();
+                var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
+                var url = DOMURL.createObjectURL(svg);
+                
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                    DOMURL.revokeObjectURL(url);
+                    
+                    canvas.toBlob(function(blob) {
+                        var item = new ClipboardItem({'image/png': blob});
+                        navigator.clipboard.write([item]).then(function() {
+                            alert('Gráfico copiado para a área de transferência!');
+                        }, function(err) {
+                            console.error('Erro ao copiar o gráfico: ', err);
+                        });
+                    });
+                };
+                img.src = url;
+            });
         });
-    }
-
-    return boxplotData;
-}
-
-// Função auxiliar para obter a lista de variáveis numéricas
-function getNumericVariables(data) {
-    return Object.keys(data);
-}
-
-// Função auxiliar para obter a lista de variáveis categóricas
-function getCategoricalVariables(data) {
-    // Aqui assumimos que as categorias são as mesmas em todos os dados numéricos
-    // Então, apenas pegamos as chaves do primeiro conjunto de dados numéricos
-    var firstNumericData = data[Object.keys(data)[0]];
-    var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
-    var categories = categories.filter(onlyUnique)
-    return categories;
-}
-function onlyUnique(value, index, array) {
-  return array.indexOf(value) === index;
-}
-
-d3.json('/visualizacao').then(function(data) {
-    console.log(data);
-    console.log(Object.keys(data));
-
-    // Preenchendo a seleção dropdown com as variáveis numéricas
-    var dropdown = d3.select('#numVarSelect');
-    dropdown.selectAll('option')
-        .data(getNumericVariables(data))
-        .enter()
-        .append('option')
-        .attr('value', function(d) { return d; })
-        .text(function(d) { return d; });
-
-    // Preenchendo a seleção dropdown com as categorias
-    var catDropdown = d3.select('#catSelect');
-    catDropdown.selectAll('option')
-        .data(getCategoricalVariables(data)) // Use a função auxiliar para obter as variáveis categóricas.
-        .enter()
-        .append('option')
-        .attr('value', function(d) { return d; })
-        .text(function(d) { return d; });
-
-    // Criando o boxplot para a chave selecionada
-    function updateBoxplot() {
-        d3.select('#boxplot').selectAll("svg").remove();
-
-        var varNumerica = dropdown.property('value');
-        var categoria = catDropdown.property('value');
-
-        var preparedData = prepareData(data, varNumerica, categoria);
-        console.log(preparedData)
-        console.log("foi?")
-        var boxplotData = generateBoxplotData(preparedData, varNumerica, categoria);
-        updateData(boxplotData);
-        console.log("foi?")
-        console.log(boxplotData.data)
-        console.log(boxplotData)
-        createBoxplot(boxplotData);
-    }
-
-    dropdown.on('change', updateBoxplot);
-    catDropdown.on('change', updateBoxplot);
-
-        // Gerando o boxplot inicial
-        updateBoxplot();
-    }).catch(function(error){
-        console.log(error);
-    });
-
-
-function updateData(newData) {
-  data = newData;
-
-  // Limpa os seletores de cores existentes
-  document.getElementById('colorPickerContainer').innerHTML = '';
-
-  // Cria um novo seletor de cores para cada 'level' nos novos dados
-  data.forEach(function(d, i) {
-    var colorPickerDiv = document.createElement('div');
-
-    var label = document.createElement('label');
-    label.setAttribute('for', 'colorPicker_' + i);
-    label.innerText = d.level;
-    colorPickerDiv.appendChild(label);
-
-    var colorPicker = document.createElement('input');
-    colorPicker.setAttribute('type', 'color');
-    colorPicker.setAttribute('id', 'colorPicker_' + i);
-    colorPicker.setAttribute('value', '#000000');
-    colorPickerDiv.appendChild(colorPicker);
-
-    document.getElementById('colorPickerContainer').appendChild(colorPickerDiv);
-  });
-
-
-
-}
-document.getElementById('updateChartButton').addEventListener('click', function() {
-  // Coleta as cores selecionadas
-  var colorScheme = data.map(function(d, i) {
-    return document.getElementById('colorPicker_' + i).value;
-  });
-
-  // Atualiza o gráfico com as cores selecionadas
-  console.log("oioi")
-  console.log(colorScheme)
-  createBoxplot(data, colorScheme);
-});
-});
-document.getElementById("saveButton").addEventListener("click", function(){
-    var svgElement = document.querySelector('svg');
-    var svgString = new XMLSerializer().serializeToString(svgElement);
-
-    var canvas = document.createElement("canvas");
-    // Define o tamanho do canvas para o mesmo tamanho do SVG
-    canvas.width = svgElement.clientWidth;
-    canvas.height = svgElement.clientHeight;
-
-    var ctx = canvas.getContext("2d");
-    var DOMURL = self.URL || self.webkitURL || self;
-    var img = new Image();
-    var svg = new Blob([svgString], {type: "image/svg+xml;charset=utf-8"});
-    var url = DOMURL.createObjectURL(svg);
-    
-    img.onload = function() {
-        ctx.drawImage(img, 0, 0);
-        var png = canvas.toDataURL("image/png");
-        DOMURL.revokeObjectURL(png);
-
-        var varNumerica = d3.select('#numVarSelect').property('value');
-        var categoria = d3.select('#catSelect').property('value');
-
-        var filters_string = "{{ filters_string }}"; // Use a sintaxe Jinja para inserir filters_string
-
-        var filename = 'boxplot_' + filters_string + '_' + varNumerica + '_' + categoria + '.png';
-        // Usando FileSaver para salvar a imagem
-        saveAs(png, filename);
-    };
-    
-    img.src = url;
-});
-</script>
-    
+    </script>
 </body>
 </html>
