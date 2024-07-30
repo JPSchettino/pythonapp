@@ -191,6 +191,49 @@ def barplot():
     print(graphs)
     return render_template('barplot.html', num_vars=num_vars, filters_string=filters_string, cat_vars=cat_vars, cat_levels=cat_levels,graphs=graphs)  # Substitua 'seu_arquivo.html' pelo nome do seu arquivo HTML
 
+
+
+
+@app.route('/TabelaHedonica', methods=['GET', 'POST'])
+def TabelaHedonica():
+    if 'dataframe' not in session:
+        return redirect(url_for('central'))
+    
+    dataframe = pd.read_json(session['filtered_dataframe'])
+    cat_vars = session.get('cat_vars', [])
+    num_vars = session.get('num_vars', [])
+    cat_levels = {}
+    
+    for num_var in num_vars:
+        for cat_var in cat_vars:
+            cat_levels[cat_var] = dataframe[cat_var].unique().tolist()
+
+    graphs = {}
+
+    for num_var in num_vars:
+        graphs[num_var] = {}
+        for cat_var in cat_vars:
+            graph_data = dataframe.groupby(cat_var)[num_var].describe()
+            graphs[num_var][f"barplot_{cat_var}"] = graph_data.to_dict()
+            graphs[num_var][f"boxplot_{cat_var}"] = graph_data.to_dict()
+
+        graph_data = dataframe[num_var].value_counts(normalize=True)
+        graphs[num_var][f"histogram"] = graph_data.to_dict()
+
+    filters = session.get('filters', {})
+    filter_strings = []
+    for key, value in filters.items():
+        filter_value = ', '.join(value['values'])
+        filter_strings.append(f'{key}: {filter_value}')
+    filters_string = ', '.join(filter_strings)
+
+    session['graphs'] = graphs
+    print(graphs)
+    return render_template('TabelaHedonica.html', num_vars=num_vars, filters_string=filters_string, cat_vars=cat_vars, cat_levels=cat_levels,graphs=graphs)  # Substitua 'seu_arquivo.html' pelo nome do seu arquivo HTML
+
+
+
+
 @app.route('/histogram', methods=['GET', 'POST'])
 def histogram():
     if 'dataframe' not in session:

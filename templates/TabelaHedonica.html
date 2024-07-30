@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Tabela de Dados</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/themes/classic.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr@1.7.2/dist/pickr.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.2/FileSaver.min.js"></script>
+    <style>
+        .logo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 250px;
+            height: auto;
+        }
+        body {
+            font-family: 'Sora', Light;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(45deg, #19B1A1, #307FE2);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: auto;
+        }
+        .container {
+            text-align: center;
+            max-width: 90%;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .table-container {
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 100%;
+            overflow: auto;
+            padding: 20px;
+            background: rgba(0,0,0,0.7);
+            transition: all 0.5s ease;
+        }
+        .sidebar-hidden {
+            right: -200px;
+        }
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            margin-bottom: 20px;
+        }
+        .sidebar ul li a {
+            color: white;
+            text-decoration: none;
+        }
+        select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0px 2px 6px 1px rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+            color: #333;
+            background-color: white;
+            margin-right: 20px;
+            transition: all 0.3s ease;
+        }
+        select:focus {
+            box-shadow: 0px 2px 6px 1px #19B1A1;
+            outline: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: white;
+            color: black;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #307FE2;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img class="logo" src="static/logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+    </header>
+    <div class="container">
+        <h1>Tabela de Dados (filtrados por {{ filters_string }})</h1>
+        <div class="table-container">
+            <select id="catSelect"></select>
+            <div id="dataTable"></div>
+        </div>
+        <div class="explanation">
+            Esta tabela apresenta a média e o desvio padrão das variáveis numéricas para cada categoria selecionada. As variáveis estão listadas nas linhas e as categorias nas colunas.
+        </div>
+    </div>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script>
+        window.addEventListener('load', function() {
+            console.log("dataTable.js carregado");
+
+            function prepareTableData(data, categoria) {
+                var tableData = {};
+
+                for (var varNumerica in data) {
+                    var cleanedVarNumerica = varNumerica.replace(/^H_/, '');
+
+                    tableData[cleanedVarNumerica] = data[varNumerica][`barplot_${categoria}`];
+                }
+
+                return tableData;
+            }
+
+            function generateTable(data, categoria) {
+                var tableData = prepareTableData(data, categoria);
+
+                var table = '<table>';
+                table += '<tr><th>Variável</th>';
+
+                for (var cat in tableData[Object.keys(tableData)[0]].mean) {
+                    table += `<th>${cat}</th>`;
+                }
+
+                table += '</tr>';
+
+                for (var varNumerica in tableData) {
+                    table += `<tr><td>${varNumerica}</td>`;
+
+                    for (var cat in tableData[varNumerica].mean) {
+                        table += `<td>${tableData[varNumerica].mean[cat].toFixed(2)} ± ${tableData[varNumerica].std[cat].toFixed(2)}</td>`;
+                    }
+
+                    table += '</tr>';
+                }
+
+                table += '</table>';
+                d3.select('#dataTable').html(table);
+            }
+
+            function getCategoricalVariables(data) {
+                var firstNumericData = data[Object.keys(data)[0]];
+                var categories = Object.keys(firstNumericData).map(key => key.split('_')[1]);
+                var categories = categories.filter(onlyUnique)
+                return categories;
+            }
+            function onlyUnique(value, index, array) {
+              return array.indexOf(value) === index;
+            }
+
+            d3.json('/visualizacao').then(function(data) {
+                console.log(data);
+                console.log(Object.keys(data));
+
+                var catDropdown = d3.select('#catSelect');
+                catDropdown.selectAll('option')
+                    .data(getCategoricalVariables(data))
+                    .enter()
+                    .append('option')
+                    .attr('value', function(d) { return d; })
+                    .text(function(d) { return d; });
+
+                function updateTable() {
+                    d3.select('#dataTable').html("");
+
+                    var categoria = catDropdown.property('value');
+                    generateTable(data, categoria);
+                }
+
+                catDropdown.on('change', updateTable);
+
+                updateTable();
+            }).catch(function(error){
+                console.log(error);
+            });
+        });
+    </script>
+</body>
+</html>

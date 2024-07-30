@@ -89,7 +89,7 @@
         <h2>Resultados de Normalidade</h2>
         <div>
             <button onclick="copyTableToClipboard('table1')">Copiar Tabela</button>
-            <button onclick="exportTableToExcel('table1')">Exportar Tabela (Excel)</button>
+            <button onclick="exportTableToCSV('table1')">Exportar Tabela (Excel)</button>
         </div>
         <table id="table1" class="results">
             {{ results_normality_html | safe }}
@@ -99,7 +99,7 @@
         <h2>Resultados de Testes</h2>
         <div>
             <button onclick="copyTableToClipboard('table2')">Copiar Tabela</button>
-            <button onclick="exportTableToExcel('table2')">Exportar Tabela (Excel)</button>
+            <button onclick="exportTableToCSV('table2')">Exportar Tabela (Excel)</button>
         </div>
         <table id="table2" class="results">
             {{ results_tests_html | safe }}
@@ -109,7 +109,7 @@
         <h2>Resultados Descritivos</h2>
         <div>
             <button onclick="copyTableToClipboard('table3')">Copiar Tabela</button>
-            <button onclick="exportTableToExcel('table3')">Exportar Tabela (Excel)</button>
+            <button onclick="exportTableToCSV('table3')">Exportar Tabela (Excel)</button>
         </div>
         <table id="table3" class="results">
             {{ results_descriptive_html | safe }}
@@ -134,11 +134,11 @@
     </div>
     <div class="sidebar sidebar-hidden" id="sidebar">
         <ul>
-            <li><a href="#table1">Resultados de Normalidade</a></li>
-            <li><a href="#table2">Resultados de Testes</a></li>
-            <li><a href="#table3">Resultados Descritivos</a></li>
-            <li><a href="#qq_plots">Gráficos Q-Q</a></li>
-            <li><a href="#residual_plots">Gráficos de Resíduos</a></li>
+            <li><a href="#" onclick="scrollToSection('table1')">Resultados de Normalidade</a></li>
+            <li><a href="#" onclick="scrollToSection('table2')">Resultados de Testes</a></li>
+            <li><a href="#" onclick="scrollToSection('table3')">Resultados Descritivos</a></li>
+            <li><a href="#" onclick="scrollToSection('qq_plots')">Gráficos Q-Q</a></li>
+            <li><a href="#" onclick="scrollToSection('residual_plots')">Gráficos de Resíduos</a></li>
         </ul>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -147,6 +147,12 @@
     <script src="templates\table2excel.js"></script>
 
     <script>
+
+function scrollToSection(id) {
+        document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }    
+
+
         const sidebar = document.getElementById('sidebar');
 
         // Evento de passagem do mouse
@@ -172,41 +178,66 @@
             });
         });
 
-        function copyTableToClipboard(tableID) {
-            var table = document.getElementById(tableID);
-            var textArea = document.createElement("textarea");
-            var rows = table.querySelectorAll("tr");
-            
-            var text = "";
-            rows.forEach(row => {
-                var cells = row.querySelectorAll("th, td");
-                var rowText = [];
-                cells.forEach(cell => {
-                    rowText.push(cell.innerText.trim());
-                });
-                text += rowText.join("\t") + "\n";  // Usando tabulações para separar células
-            });
+        function exportTableToCSV(tableID) {
+    console.log("Iniciando exportação para CSV para a tabela com ID:", tableID);
+    
+    var table = document.getElementById(tableID);
+    if (!table) {
+        console.error("Tabela com ID " + tableID + " não encontrada.");
+        alert("Tabela não encontrada.");
+        return;
+    }
+    console.log("Tabela encontrada:", table);
 
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand("copy");
-            document.body.removeChild(textArea);
+    // Verificar o conteúdo da tabela
+    console.log("Conteúdo do elemento table:", table.innerHTML);
 
-            alert("Tabela copiada para a área de transferência");
-        }
+    var rows = table.querySelectorAll("tr");
+    console.log("Número de linhas encontradas:", rows.length);
 
-        function exportTableToExcel(tableID) {
-            var table = document.getElementById(tableID);
-            // Remover spans e aplicar estilos se necessário
-            table.querySelectorAll('span').forEach(span => span.replaceWith(span.innerText));
-            
-            var sheet = XLSX.utils.table_to_sheet(table);
-            var workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, sheet, "Sheet1");
+    var csvContent = "";
 
-            XLSX.writeFile(workbook, 'table_data.xlsx');
-        }
+    rows.forEach((row, rowIndex) => {
+        console.log("Processando linha:", rowIndex);
+        var cells = row.querySelectorAll("th, td");
+        console.log("Número de células encontradas na linha " + rowIndex + ":", cells.length);
+
+        var rowData = [];
+        cells.forEach((cell, cellIndex) => {
+            var cellText = cell.innerText || cell.textContent;
+            console.log("Texto da célula [linha " + rowIndex + ", célula " + cellIndex + "]:", cellText);
+            rowData.push('"' + cellText.replace(/"/g, '""') + '"');
+        });
+
+        var rowString = rowData.join(",");
+        console.log("Dados formatados da linha " + rowIndex + ":", rowString);
+        csvContent += rowString + "\n";
+    });
+
+    console.log("Conteúdo final do CSV:", csvContent);
+
+    if (csvContent.trim() === "") {
+        console.warn("Nenhum dado disponível para exportação.");
+        alert("Nenhum dado disponível para exportação.");
+        return;
+    }
+
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    console.log("Blob URL criado para o download:", url);
+
+    var link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", tableID + ".csv");
+    document.body.appendChild(link);
+    console.log("Elemento de link adicionado ao DOM e clicado programaticamente.");
+    link.click();
+    document.body.removeChild(link);
+    console.log("Elemento de link removido do DOM após o clique.");
+}
+
+
+
     </script>
 </body>
 </html>

@@ -11,8 +11,8 @@
             position: absolute;
             top: 10px;
             left: 10px;
-            width: 400px; /* ajuste o valor de acordo com o tamanho desejado */
-            height: auto; /* para manter a proporção da imagem */
+            width: 400px;
+            height: auto;
         }
         body {
             font-family: 'Sora', Light;
@@ -31,50 +31,61 @@
             max-width: 200%;
             margin-bottom: 20px;
             margin-top: 150px;
-            background: rgba(182, 116, 116, 0.7);
+            background: rgba(255, 255, 255, 0.7);
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.1);
             overflow-x: auto;
-            top: 80px;
         }
         h1 {
             font-size: 3em;
             margin-bottom: 20px;
+            color: black;
         }
         img {
             display: block;
             margin: 20px auto;
             max-width: 100%;
         }
-        a {
+        a, button {
             display: inline-block;
-            margin: 20px 0;
+            margin: 20px 10px;
             padding: 10px 20px;
             background-color: #307FE2;
             color: white;
             text-decoration: none;
             border-radius: 4px;
             transition: all 0.5s ease;
+            cursor: pointer;
+            border: none;
         }
-        a:hover {
+        a:hover, button:hover {
             background-color: #19B1A1;
         }
     </style>
 </head>
 <body>
     <header>
-        <img class = "logo" src="static\logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
+        <img class="logo" src="static/logo_preferencial_FOODTEST.png" alt="Logo da Empresa">
     </header>
     <div class="container">
         <h1>Mapa de correlação (filtrado por {{ filters_string }})</h1>
-        <img src="data:image/png;base64,{{ corrgraf }}" alt="Clustermap" width="3800">
-    </div> <!-- Fecha a div do container -->
+        <img id="correlation-image" src="data:image/png;base64,{{ corrgraf }}" alt="Clustermap" width="3800">
+        <button id="download-button">Salvar como PNG</button>
+    </div>
 
-            <!-- Explicação do gráfico -->
     <div class="explanation">
         Este gráfico de correlação categórica exibe as relações entre diferentes variáveis categóricas presentes nos dados. Ele utiliza uma matriz de correlação para ilustrar como cada par de variáveis está relacionado. A matriz é representada de forma visual através de um "clustermap", que organiza as variáveis em clusters com base em suas correlações.
     </div>
-        
+    
+    <script>
+        document.getElementById('download-button').addEventListener('click', function() {
+            var image = document.getElementById('correlation-image');
+            var link = document.createElement('a');
+            link.href = image.src;
+            link.download = 'correlation_map.png';
+            link.click();
+        });
+    </script>
 </body>
 </html>
